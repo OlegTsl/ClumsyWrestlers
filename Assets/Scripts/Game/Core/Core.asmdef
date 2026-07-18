@@ -1,0 +1,22 @@
+{
+  "name": "Core",
+  "references": [
+    "Zenject",
+    "UniTask",
+    "Unity.Addressables",
+    "Unity.ResourceManager",
+    "Unity.TextMeshPro",
+    "EntitasGenerated",
+    "CommonUtils",
+    "GameData"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
