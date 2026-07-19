@@ -7,8 +7,8 @@
     "Unity.ResourceManager",
     "Unity.TextMeshPro",
     "EntitasGenerated",
-    "CommonUtils",
-    "GameData"
+    "Common",
+    "Character"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

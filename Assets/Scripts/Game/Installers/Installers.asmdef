@@ -3,6 +3,7 @@
   "references": [
     "Common",
     "Core",
+    "Character",
     "Zenject"
   ],
   "includePlatforms": [],

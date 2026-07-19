@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Common.Localization
 {
-    [CreateAssetMenu(fileName = "LocalizationData", menuName = "Localization/LocalizationData")]
+    [CreateAssetMenu(fileName = "locales", menuName = "Game/Locales/Locales Data")]
     public class LocalizationData : ScriptableObject
     {
         [System.Serializable]

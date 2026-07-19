@@ -1,3 +1,4 @@
+using Game.Character;
 using Game.Common.Installers;
 using Game.Core.Installers;
 using Zenject;
@@ -10,6 +11,8 @@ namespace Game.Installers
         {
             CommonInstaller.Install(Container);
             CoreInstaller.Install(Container);
+
+            CharacterInstaller.Install(Container);
         }
     }
 }

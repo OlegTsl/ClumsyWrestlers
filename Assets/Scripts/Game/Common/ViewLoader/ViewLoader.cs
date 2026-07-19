@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
-namespace Game.Common.AssetsLoader
+namespace Game.Common.ViewLoader
 {
     public class ViewLoader<T> : IViewLoader<T> where T : IView
     {

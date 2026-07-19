@@ -1,12 +1,32 @@
 using System;
+using Cysharp.Threading.Tasks;
+using Game.Common.Localization;
+using Game.Core.Extensions;
+using UnityEngine;
 
 namespace Game.Core.Controllers
 {
     public class MainGameController : IMainGameController, IDisposable
     {
+        private readonly ILocalizationService _localizationService;
+
+        public MainGameController(
+            ILocalizationService localizationService
+        )
+        {
+            _localizationService = localizationService;
+        }
+
         public void RunGame()
         {
-            
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            RunGameAsync().Forget();
+        }
+
+        private async UniTask RunGameAsync()
+        {
+            LocalizationExtension.InitializeService(_localizationService);
+            await _localizationService.SetDefaultLanguage();
         }
 
         public void Dispose()

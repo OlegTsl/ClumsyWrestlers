@@ -1,6 +1,6 @@
 using Zenject;
 using Cysharp.Threading.Tasks;
-using Game.Common.AssetsLoader;
+using Game.Common.ViewLoader;
 using Game.Common.Views;
 
 namespace Game.CommonUtils.DiExtensions
