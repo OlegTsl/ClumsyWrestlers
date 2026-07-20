@@ -81,13 +81,15 @@ namespace Game.Common.Input
             {
                 if (!source.IsActive)
                     continue;
- 
+                
                 var actions = source.GetActionInputs();
                 if (actions == null || actions.Count == 0)
                     continue;
- 
+                
                 foreach (var action in actions)
-                    _eventBus.Publish(action);
+                {
+                    action.Publish(_eventBus);
+                }
             }
         }
 

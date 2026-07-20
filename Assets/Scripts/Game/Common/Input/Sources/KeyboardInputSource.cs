@@ -8,8 +8,7 @@ namespace Game.Common.Input
         public int  Priority { get; }
         public bool IsActive { get; set; } = true;
 
-        private readonly List<ActionInput> _actionBuffer = new(4);
-        private int  _actionCount;
+        private readonly List<IActionInput> _actionBuffer = new(4);
         private bool _wasSpacePressed;
 
         public KeyboardSource(int priority = 0)
@@ -33,19 +32,18 @@ namespace Game.Common.Input
         public LookInput GetLookInput()
             => LookInput.None;
 
-        public IReadOnlyList<ActionInput> GetActionInputs()
+        public IReadOnlyList<IActionInput> GetActionInputs()
         {
-            _actionCount = 0;
             _actionBuffer.Clear();
 
             bool spacePressed = UnityEngine.Input.GetKey(KeyCode.Space);
 
             if (spacePressed && !_wasSpacePressed)
-                _actionBuffer.Add(new ActionInput("Jump", InputEventType.Pressed));
+                _actionBuffer.Add(new JumpAction(InputEventType.Pressed));
             else if (!spacePressed && _wasSpacePressed)
-                _actionBuffer.Add(new ActionInput("Jump", InputEventType.Released));
+                _actionBuffer.Add(new JumpAction(InputEventType.Released));
             else if (spacePressed)
-                _actionBuffer.Add(new ActionInput("Jump", InputEventType.Held));
+                _actionBuffer.Add(new JumpAction(InputEventType.Held));
 
             _wasSpacePressed = spacePressed;
 

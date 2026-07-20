@@ -10,6 +10,6 @@ namespace Game.Common.Input
         MoveInput GetMoveInput();
         LookInput GetLookInput();
         
-        IReadOnlyList<ActionInput> GetActionInputs();
+        IReadOnlyList<IActionInput> GetActionInputs();
     }
 }

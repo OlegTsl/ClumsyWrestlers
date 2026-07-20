@@ -9,7 +9,7 @@ namespace Game.Common.Input
         public bool IsActive { get; set; } = true;
 
         private float _sensitivity = 2f;
-        private readonly List<ActionInput> _actionBuffer = new(4);
+        private readonly List<IActionInput> _actionBuffer = new(4);
         private bool _wasLmbPressed;
         private bool _wasRmbPressed;
 
@@ -31,26 +31,26 @@ namespace Game.Common.Input
             return new LookInput(delta);
         }
 
-        public IReadOnlyList<ActionInput> GetActionInputs()
+        public IReadOnlyList<IActionInput> GetActionInputs()
         {
             _actionBuffer.Clear();
 
             bool lmbPressed = UnityEngine.Input.GetMouseButton(0);
             if (lmbPressed && !_wasLmbPressed)
-                _actionBuffer.Add(new ActionInput("LightAttack", InputEventType.Pressed));
+                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Pressed));
             else if (!lmbPressed && _wasLmbPressed)
-                _actionBuffer.Add(new ActionInput("LightAttack", InputEventType.Released));
+                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Released));
             else if (lmbPressed)
-                _actionBuffer.Add(new ActionInput("LightAttack", InputEventType.Held));
+                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Held));
             _wasLmbPressed = lmbPressed;
 
             bool rmbPressed = UnityEngine.Input.GetMouseButton(1);
             if (rmbPressed && !_wasRmbPressed)
-                _actionBuffer.Add(new ActionInput("HeavyAttack", InputEventType.Pressed));
+                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Pressed));
             else if (!rmbPressed && _wasRmbPressed)
-                _actionBuffer.Add(new ActionInput("HeavyAttack", InputEventType.Released));
+                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Released));
             else if (rmbPressed)
-                _actionBuffer.Add(new ActionInput("HeavyAttack", InputEventType.Held));
+                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Held));
             _wasRmbPressed = rmbPressed;
 
             return _actionBuffer;

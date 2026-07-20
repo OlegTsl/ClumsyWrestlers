@@ -10,8 +10,7 @@ namespace Game.Core.Character
         private readonly InputEventBus      _inputEvents;
         private readonly MovementController _movementController;
         
-        private ICharacterView _view;
-        private Camera         _camera;
+        private Camera _camera;
 
         private bool _isEnabled = true;
         private bool _isInitialized;
@@ -25,12 +24,11 @@ namespace Game.Core.Character
             _movementController = movementController;
             
             _inputEvents.Subscribe<MoveInput>(OnMove);
-            _inputEvents.Subscribe<ActionInput>(OnAction);
+            _inputEvents.Subscribe<JumpAction>(OnJump);
         }
 
         public void Initialize(ICharacterView view)
         {
-            _view = view;
             _movementController.Initialize(view);
             _isInitialized = true;
         }
@@ -50,24 +48,13 @@ namespace Game.Core.Character
             _movementController.SetMoveDirection(worldDirection);
         }
 
-        private void OnAction(ActionInput action)
+        private void OnJump(JumpAction action)
         {
             if (!_isEnabled || !_isInitialized)
                 return;
             
-            if (action.EventType != InputEventType.Pressed)
-                return;
-            
-            /*switch (action.ActionId)
-            {
-                case InputActions.Jump:
-                    _movement.Jump();
-                    break;
-                    
-                case InputActions.Dash:
-                    // Будет позже
-                    break;
-            }*/
+            if (action.EventType == InputEventType.Pressed)
+                _movementController.Jump();
         }
         
         private Vector3 TransformInputToWorld(Vector3 input)
@@ -76,7 +63,7 @@ namespace Game.Core.Character
                 _camera = Camera.main;
             
             Vector3 cameraForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
-            Vector3 cameraRight = Vector3.ProjectOnPlane(_camera.transform.right, Vector3.up).normalized;
+            Vector3 cameraRight   = Vector3.ProjectOnPlane(_camera.transform.right, Vector3.up).normalized;
             
             return (cameraForward * input.z + cameraRight * input.x).normalized;
         }
@@ -84,7 +71,7 @@ namespace Game.Core.Character
         public void Dispose()
         {
             _inputEvents.Unsubscribe<MoveInput>(OnMove);
-            _inputEvents.Unsubscribe<ActionInput>(OnAction);
+            _inputEvents.Unsubscribe<JumpAction>(OnJump);
         }
     }
 }
