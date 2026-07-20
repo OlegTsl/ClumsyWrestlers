@@ -15,6 +15,8 @@ namespace Game.Core.Movement
     
         private float   _verticalVelocity;
         private Vector3 _horizontalVelocity;
+
+        public bool IsGrounded => _isGrounded;
         
         public void Initialize(ICharacterView view)
         {

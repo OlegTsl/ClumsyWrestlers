@@ -9,5 +9,7 @@ namespace Game.Core.Movement
         void SetMoveDirection(Vector3 direction);
         void Jump();
         void FixedTick();
+
+        bool IsGrounded { get; }
     }
 }

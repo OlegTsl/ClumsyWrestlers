@@ -1,4 +1,5 @@
-﻿using Game.Core.Character;
+﻿using Game.Core.Animation;
+using Game.Core.Character;
 using Game.Core.Controllers;
 using Game.Core.Level;
 using Game.Core.Movement;
@@ -15,11 +16,12 @@ namespace Game.Core.Installers
 
             Container.BindInterfacesAndSelfTo<MainGameController>().AsSingle();
             Container.Bind<GameEntryPointManager>().AsTransient();
-            Container.Bind<IRoundController>().To<RoundController>().AsSingle();
 
             LevelInstaller.Install(Container);
             CharacterInstaller.Install(Container);
             MovementInstaller.Install(Container);
+            AnimationInstaller.Install(Container);
+            RoundInstaller.Install(Container);
         }
     }
 }

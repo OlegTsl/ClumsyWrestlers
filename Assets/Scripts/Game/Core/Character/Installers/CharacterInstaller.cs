@@ -6,7 +6,7 @@ namespace Game.Core.Character
     {
         public override void InstallBindings()
         {
-            Container.Bind<ICharacterController>().To<CharacterController>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CharacterController>().AsSingle().NonLazy();
             Container.Bind<ICharacterFactory>().To<CharacterFactory>().AsSingle();
         }
     }

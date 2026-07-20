@@ -15,10 +15,10 @@ MonoBehaviour:
   _characterName: str_ortiz
   _mass: 80
   _movement:
-    RunSpeed: 6
-    WalkSpeed: 2
-    Acceleration: 100
-    Deceleration: 10
+    RunSpeed: 12
+    WalkSpeed: 6
+    Acceleration: 60
+    Deceleration: 50
     JumpImpulse: 8
     AirborneGravityMultiplier: 2
     AirControlFactor: 0.3
