@@ -17,6 +17,11 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 6444f821ffe3f41e9850ff6aa38a2cf4
   m_SerializeEntries:
+  - m_GUID: 43d00f660d2df473a979b7084c6bab89
+    m_Address: BrawlArena
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4c3d9f893e5194e13b3bc8be207cd9f9
     m_Address: Wrestler
     m_ReadOnly: 0

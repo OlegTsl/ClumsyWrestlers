@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using Game.Common.Localization;
 using Game.Core.Extensions;
+using Game.Core.Round;
 using UnityEngine;
 
 namespace Game.Core.Controllers
@@ -9,12 +10,15 @@ namespace Game.Core.Controllers
     public class MainGameController : IMainGameController, IDisposable
     {
         private readonly ILocalizationService _localizationService;
+        private readonly IRoundController     _roundController;
 
         public MainGameController(
-            ILocalizationService localizationService
+            ILocalizationService localizationService,
+            IRoundController     roundController
         )
         {
             _localizationService = localizationService;
+            _roundController     = roundController;
         }
 
         public void RunGame()
@@ -27,6 +31,8 @@ namespace Game.Core.Controllers
         {
             LocalizationExtension.InitializeService(_localizationService);
             await _localizationService.SetDefaultLanguage();
+
+            await _roundController.StartRound("BrawlArena");
         }
 
         public void Dispose()

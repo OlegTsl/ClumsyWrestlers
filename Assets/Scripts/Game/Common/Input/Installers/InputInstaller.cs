@@ -18,7 +18,7 @@ namespace Game.Common.Input
                 .AsSingle()
                 .WithArguments(1);
 
-            Container.Bind<InputController>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<InputController>().AsSingle().NonLazy();
         }
     }
 }
