@@ -7,6 +7,7 @@ namespace Game.Core.Movement
     public class MovementController : IMovementController, IFixedTickable
     {
         private Rigidbody        _rigidbody;
+        private Transform        _characterTransform;
         private MovementSettings _settings;
         
         private Vector3 _moveDirection;
@@ -22,8 +23,9 @@ namespace Game.Core.Movement
         
         public void Initialize(ICharacterView view)
         {
-            _rigidbody = view.Rigidbody;
-            _settings  = view.Data.Movement;
+            _rigidbody          = view.Rigidbody;
+            _characterTransform = view.Transform;
+            _settings           = view.Data.Movement;
         }
         
         public void SetMoveDirection(Vector3 direction)
@@ -61,26 +63,25 @@ namespace Game.Core.Movement
 
         private void UpdateGroundMovement()
         {
+            Vector3 worldDirection = _characterTransform.TransformDirection(_moveDirection);
+            
             float currentSpeed = _horizontalVelocity.magnitude;
-            float targetSpeed  = _moveDirection.magnitude > 0.01f ? 
-                _settings.RunSpeed : 0f;
+            float targetSpeed  = worldDirection.magnitude > 0.01f ? _settings.RunSpeed : 0f;
 
             if (targetSpeed > 0.01f)
             {
                 float newSpeed = Mathf.MoveTowards(
                     currentSpeed, targetSpeed, _settings.Acceleration * Time.fixedDeltaTime);
                 
-                _horizontalVelocity = _moveDirection * newSpeed;
+                _horizontalVelocity = worldDirection * newSpeed;
             }
             else
             {
                 float newSpeed = Mathf.MoveTowards(
                     currentSpeed, 0f, _settings.Deceleration * Time.fixedDeltaTime);
-                
-                if (currentSpeed > 0.01f)
-                    _horizontalVelocity = _horizontalVelocity.normalized * newSpeed;
-                else
-                    _horizontalVelocity = Vector3.zero;
+
+                _horizontalVelocity = currentSpeed > 0.01f ?
+                    _horizontalVelocity.normalized * newSpeed : Vector3.zero;
             }
             
             _airVelocity = _horizontalVelocity;
@@ -88,27 +89,27 @@ namespace Game.Core.Movement
 
         private void UpdateAirMovement()
         {
-            if (_moveDirection.magnitude > 0.01f)
+            Vector3 worldDirection = _characterTransform.TransformDirection(_moveDirection);
+            
+            if (worldDirection.magnitude > 0.01f)
             {
                 float currentSpeed = _airVelocity.magnitude;
                 
                 if (currentSpeed < 1f)
                 {
-                    float targetSpeed  = _settings.RunSpeed * _settings.AirControlFactor;
+                    float targetSpeed = _settings.RunSpeed * _settings.AirControlFactor;
                     float acceleration = _settings.Acceleration * _settings.AirControlFactor;
                     
                     float newSpeed = Mathf.MoveTowards(
                         currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
                     
-                    _airVelocity = _moveDirection * newSpeed;
+                    _airVelocity = worldDirection * newSpeed;
                 }
                 else
                 {
-                    Vector3 targetVelocity = _moveDirection * currentSpeed;
-                    
+                    Vector3 targetVelocity = worldDirection * currentSpeed;
                     float acceleration = _settings.Acceleration * _settings.AirControlFactor;
-                    float maxSpeed     = _settings.RunSpeed;
-                    
+
                     Vector3 diff = targetVelocity - _airVelocity;
                     float diffMagnitude = diff.magnitude;
                     
@@ -161,7 +162,7 @@ namespace Game.Core.Movement
         {
             _rigidbody.AddForce(force, ForceMode.Impulse);
             
-            _isGrounded       = false;
+            _isGrounded = false;
             _verticalVelocity = force.y;
         }
     }

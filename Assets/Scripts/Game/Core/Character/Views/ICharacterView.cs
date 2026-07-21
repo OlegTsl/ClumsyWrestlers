@@ -11,5 +11,6 @@ namespace Game.Core.Character
         CapsuleCollider BodyCollider { get; }
         Collider[] AttackColliders   { get; }
         Transform Transform          { get; }
+        Camera    CharacterCamera    { get; }
     }
 }

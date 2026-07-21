@@ -7,6 +7,7 @@ namespace Game.Core.Movement
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<MovementController>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<LookController>().AsSingle().NonLazy();
         }
     }
 }

@@ -12,22 +12,25 @@ namespace Game.Core.Character
         private readonly InputEventBus       _inputEvents;
         private readonly IMovementController  _movementController;
         private readonly IAnimationController _animationController;
+        private readonly ILookController      _lookController;
         
-        private Camera    _camera;
         private Rigidbody _rigidbody;
 
         private bool _isEnabled = true;
+        private bool _hasMoveInput;
         private bool _isInitialized;
 
         public CharacterController(
             InputEventBus        inputEvents, 
             IMovementController  movementController,
-            IAnimationController animationController
+            IAnimationController animationController,
+            ILookController      lookController
         )
         {
             _inputEvents         = inputEvents;
             _movementController  = movementController;
             _animationController = animationController;
+            _lookController      = lookController;
             
             _inputEvents.Subscribe<MoveInput>(OnMove);
             _inputEvents.Subscribe<JumpAction>(OnJump);
@@ -37,6 +40,7 @@ namespace Game.Core.Character
         {
             _movementController.Initialize(view);
             _animationController.Initialize(view);
+            _lookController.Initialize(view);
 
             _rigidbody     = view.Rigidbody;
             _isInitialized = true;
@@ -49,6 +53,7 @@ namespace Game.Core.Character
             
             _animationController.UpdateMovementState(
                 _rigidbody.velocity,
+                _hasMoveInput,
                 _movementController.IsGrounded
             );
         }
@@ -63,9 +68,9 @@ namespace Game.Core.Character
         {
             if (!_isEnabled || !_isInitialized)
                 return;
-            
-            Vector3 worldDirection = TransformInputToWorld(input.Direction);
-            _movementController.SetMoveDirection(worldDirection);
+
+            _hasMoveInput = input.Direction.magnitude > 0.01f;
+            _movementController.SetMoveDirection(input.Direction);
         }
 
         private void OnJump(JumpAction action)
@@ -78,17 +83,6 @@ namespace Game.Core.Character
                 _movementController.Jump();
                 _animationController.TriggerJump();
             }
-        }
-        
-        private Vector3 TransformInputToWorld(Vector3 input)
-        {
-            if (_camera == null)
-                _camera = Camera.main;
-            
-            Vector3 cameraForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
-            Vector3 cameraRight   = Vector3.ProjectOnPlane(_camera.transform.right, Vector3.up).normalized;
-            
-            return (cameraForward * input.z + cameraRight * input.x).normalized;
         }
 
         public void Dispose()
