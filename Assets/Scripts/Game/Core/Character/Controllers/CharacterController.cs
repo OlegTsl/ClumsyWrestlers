@@ -73,7 +73,7 @@ namespace Game.Core.Character
             if (!_isEnabled || !_isInitialized)
                 return;
             
-            if (action.EventType == InputEventType.Pressed)
+            if (action.EventType == InputEventType.Pressed && _movementController.IsGrounded)
             {
                 _movementController.Jump();
                 _animationController.TriggerJump();

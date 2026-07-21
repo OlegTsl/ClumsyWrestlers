@@ -21,33 +21,17 @@ namespace Game.Core.Character
     [System.Serializable]
     public struct MovementSettings
     {
-        [Header("Speeds")]
-        public float RunSpeed;
-        public float WalkSpeed;
-        public float Acceleration;
-        public float Deceleration;
+        [Header("Ground Movement")]
+        [Range(0f, 20f)]  public float RunSpeed;
+        [Range(0f, 10f)]  public float WalkSpeed;
+        [Range(0f, 100f)] public float Acceleration;
+        [Range(0f, 100f)] public float Deceleration;
         
         [Header("Jump")]
-        public float JumpImpulse;
-        public float AirborneGravityMultiplier;
+        [Range(0f, 20f)]  public float JumpImpulse;
+        [Range(0f, 5f)]   public float AirborneGravityMultiplier;
         
         [Header("Air Control")]
-        [Range(0f, 1f)]
-        public float AirControlFactor;
-        public float MaxAirSpeed;
-        public float AirBrakingForce;
-        
-        public MovementSettings(float defaultValue)
-        {
-            RunSpeed                  = 6f;
-            WalkSpeed                 = 3f;
-            Acceleration              = 12f;
-            Deceleration              = 10f;
-            JumpImpulse               = 8f;
-            AirborneGravityMultiplier = 2f;
-            AirControlFactor          = 0.3f;
-            MaxAirSpeed               = 4f;
-            AirBrakingForce           = 8f;
-        }
+        [Range(0f, 1f)]   public float AirControlFactor;
     }
 }

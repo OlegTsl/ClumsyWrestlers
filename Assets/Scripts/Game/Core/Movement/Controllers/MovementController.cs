@@ -10,8 +10,10 @@ namespace Game.Core.Movement
         private MovementSettings _settings;
         
         private Vector3 _moveDirection;
-        private bool    _jumpRequested;
-        private bool    _isGrounded;
+        private Vector3 _airVelocity;
+
+        private bool _jumpRequested;
+        private bool _isGrounded;
     
         private float   _verticalVelocity;
         private Vector3 _horizontalVelocity;
@@ -51,36 +53,74 @@ namespace Game.Core.Movement
 
         private void UpdateHorizontalMovement()
         {
-            float targetSpeed = _moveDirection.magnitude > 0.01f ? 
-                _settings.RunSpeed : 0f;
-            
+            if (_isGrounded)
+                UpdateGroundMovement();
+            else
+                UpdateAirMovement();
+        }
+
+        private void UpdateGroundMovement()
+        {
             float currentSpeed = _horizontalVelocity.magnitude;
-            
+            float targetSpeed  = _moveDirection.magnitude > 0.01f ? 
+                _settings.RunSpeed : 0f;
+
             if (targetSpeed > 0.01f)
             {
-                float acceleration = _isGrounded ? 
-                    _settings.Acceleration : 
-                    _settings.Acceleration * _settings.AirControlFactor;
-                    
                 float newSpeed = Mathf.MoveTowards(
-                    currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
+                    currentSpeed, targetSpeed, _settings.Acceleration * Time.fixedDeltaTime);
                 
                 _horizontalVelocity = _moveDirection * newSpeed;
             }
             else
             {
-                float deceleration = _isGrounded ? 
-                    _settings.Deceleration : 
-                    _settings.Deceleration * _settings.AirControlFactor;
-                    
                 float newSpeed = Mathf.MoveTowards(
-                    currentSpeed, 0f, deceleration * Time.fixedDeltaTime);
+                    currentSpeed, 0f, _settings.Deceleration * Time.fixedDeltaTime);
                 
                 if (currentSpeed > 0.01f)
                     _horizontalVelocity = _horizontalVelocity.normalized * newSpeed;
                 else
                     _horizontalVelocity = Vector3.zero;
             }
+            
+            _airVelocity = _horizontalVelocity;
+        }
+
+        private void UpdateAirMovement()
+        {
+            if (_moveDirection.magnitude > 0.01f)
+            {
+                float currentSpeed = _airVelocity.magnitude;
+                
+                if (currentSpeed < 1f)
+                {
+                    float targetSpeed  = _settings.RunSpeed * _settings.AirControlFactor;
+                    float acceleration = _settings.Acceleration * _settings.AirControlFactor;
+                    
+                    float newSpeed = Mathf.MoveTowards(
+                        currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
+                    
+                    _airVelocity = _moveDirection * newSpeed;
+                }
+                else
+                {
+                    Vector3 targetVelocity = _moveDirection * currentSpeed;
+                    
+                    float acceleration = _settings.Acceleration * _settings.AirControlFactor;
+                    float maxSpeed     = _settings.RunSpeed;
+                    
+                    Vector3 diff = targetVelocity - _airVelocity;
+                    float diffMagnitude = diff.magnitude;
+                    
+                    if (diffMagnitude > 0.01f)
+                    {
+                        float change = Mathf.Min(acceleration * Time.fixedDeltaTime, diffMagnitude);
+                        _airVelocity += diff.normalized * change;
+                    }
+                }
+            }
+            
+            _horizontalVelocity = _airVelocity;
         }
         
         private void ApplyGravity()
@@ -102,8 +142,10 @@ namespace Game.Core.Movement
                 return;
             
             _verticalVelocity = _settings.JumpImpulse;
-            _jumpRequested    = false;
-            _isGrounded       = false;
+            _airVelocity      = _horizontalVelocity;
+            
+            _jumpRequested = false;
+            _isGrounded    = false;
         }
         
         private void ApplyFinalVelocity()

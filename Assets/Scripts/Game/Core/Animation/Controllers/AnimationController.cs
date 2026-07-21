@@ -22,7 +22,8 @@ namespace Game.Core.Animation
         
         public void UpdateMovementState(Vector3 velocity, bool isGrounded)
         {
-            if (_animator == null) return;
+            if (_animator == null)
+                return;
             
             Vector3 localVelocity = _transform.InverseTransformDirection(velocity);
             localVelocity.y = 0;
@@ -37,11 +38,23 @@ namespace Game.Core.Animation
             float moveX = 0f;
             float moveY = 0f;
             
-            if (speed > 0.01f)
+            if (speed > 0f)
             {
                 Vector3 normalizedVelocity = localVelocity / speed;
-                moveX = normalizedVelocity.x;
-                moveY = normalizedVelocity.z;
+                
+                float absZ = Mathf.Abs(normalizedVelocity.z);
+                float absX = Mathf.Abs(normalizedVelocity.x);
+                
+                if (absZ > absX)
+                {
+                    moveY = normalizedVelocity.z > 0 ? 1f : -1f;
+                    moveX = 0f;
+                }
+                else
+                {
+                    moveX = normalizedVelocity.x > 0 ? 1f : -1f;
+                    moveY = 0f;
+                }
             }
             
             _animator.SetFloat(MoveX, moveX, 0.03f, Time.deltaTime);
@@ -50,7 +63,6 @@ namespace Game.Core.Animation
             _animator.SetBool(IsGroundedParam, isGrounded);
         }
 
-        
         public void TriggerJump()
         {
             if (_animator != null)
