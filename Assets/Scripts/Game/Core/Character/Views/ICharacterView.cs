@@ -12,5 +12,7 @@ namespace Game.Core.Character
         Collider[] AttackColliders   { get; }
         Transform Transform          { get; }
         Camera    CharacterCamera    { get; }
+
+        void SetAsPlayer(bool isPlayer);
     }
 }

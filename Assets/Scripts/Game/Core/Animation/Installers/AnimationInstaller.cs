@@ -6,7 +6,7 @@ namespace Game.Core.Animation
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<AnimationController>().AsSingle();
+            Container.Bind<IAnimationController>().To<AnimationController>().AsTransient();
         }
     }
 }

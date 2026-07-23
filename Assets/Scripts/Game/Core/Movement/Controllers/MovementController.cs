@@ -1,10 +1,9 @@
 using Game.Core.Character;
 using UnityEngine;
-using Zenject;
 
 namespace Game.Core.Movement
 {
-    public class MovementController : IMovementController, IFixedTickable
+    public class MovementController : IMovementController
     {
         private Rigidbody        _rigidbody;
         private Transform        _characterTransform;

@@ -24,5 +24,8 @@ namespace Game.Core.Character
         public void Show() => gameObject.SetActive(true);
 
         public Action DisposeAction { get; set; }
+
+        public void SetAsPlayer(bool isPlayer)
+            => _characterCamera.enabled = isPlayer;
     }
 }

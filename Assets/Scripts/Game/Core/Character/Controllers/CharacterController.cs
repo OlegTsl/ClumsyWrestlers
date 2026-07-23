@@ -7,7 +7,7 @@ using Zenject;
 
 namespace Game.Core.Character
 {
-    public class CharacterController : ICharacterController, ILateTickable, IDisposable
+    public class CharacterController : ICharacterController, ILateTickable, IFixedTickable, IDisposable
     {
         private readonly InputEventBus       _inputEvents;
         private readonly IMovementController  _movementController;
@@ -46,9 +46,17 @@ namespace Game.Core.Character
             _isInitialized = true;
         }
 
+        public void FixedTick()
+        {
+            if (!_isEnabled || !_isInitialized)
+                return;
+
+            _movementController.FixedTick();
+        }
+
         public void LateTick()
         {
-            if (!_isInitialized)
+            if (!_isEnabled || !_isInitialized)
                 return;
             
             _animationController.UpdateMovementState(
