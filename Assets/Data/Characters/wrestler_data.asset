@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: wrestler_data
   m_EditorClassIdentifier: 
   _characterName: str_ortiz
-  _mass: 80
+  _characterMass: 80
   _movement:
     RunSpeed: 6
     WalkSpeed: 2
@@ -22,3 +22,10 @@ MonoBehaviour:
     JumpImpulse: 7
     AirborneGravityMultiplier: 2
     AirControlFactor: 0.3
+  _attackSettings:
+    SimpleAttackDamage: 0
+    SimpleAttackKnockback: 0
+    SimpleAttackDuration: 1.1
+    SimpleAttackHitStop: 0
+    SimpleAttackHitboxStart: 0.4
+    SimpleAttackHitboxEnd: 0.55

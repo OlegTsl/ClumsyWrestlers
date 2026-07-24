@@ -7,6 +7,7 @@ namespace Game.Core.Movement
     {
         void Initialize(ICharacterView view);
         void SetMoveDirection(Vector3 direction);
+        void ApplyExternalForce(Vector3 force);
         void Jump();
         void FixedTick();
 

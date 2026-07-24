@@ -9,6 +9,7 @@ namespace Game.Core.Character
             Container.BindInterfacesAndSelfTo<CharacterController>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<EnemyController>().AsSingle().NonLazy();
             Container.Bind<ICharacterFactory>().To<CharacterFactory>().AsSingle();
+            Container.Bind<ICharacterRegistry>().To<CharacterRegistry>().AsSingle();
         }
     }
 }

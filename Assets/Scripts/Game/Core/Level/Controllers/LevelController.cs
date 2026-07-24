@@ -11,6 +11,7 @@ namespace Game.Core.Level
         private readonly ICharacterFactory    _characterFactory;
         private readonly ICharacterController _characterController;
         private readonly IEnemyController     _enemyController;
+        private readonly ICharacterRegistry   _characterRegistry;
 
         private ILevelView     _level;
         private ICharacterView _player;
@@ -24,13 +25,15 @@ namespace Game.Core.Level
             IAssetManager        assetManager,
             ICharacterFactory    characterFactory,
             ICharacterController characterController,
-            IEnemyController     enemyController
+            IEnemyController     enemyController,
+            ICharacterRegistry   characterRegistry
         )
         {
             _assetManager        = assetManager;
             _characterFactory    = characterFactory;
             _characterController = characterController;
             _enemyController     = enemyController;
+            _characterRegistry   = characterRegistry;
         }
 
         public async UniTask LoadLevel(string address)
@@ -64,6 +67,8 @@ namespace Game.Core.Level
             if (_player != null)
             {
                 _assetManager.UnloadAsset(_playerName);
+                _characterRegistry.Unregister(_player);
+                
                 Debug.LogError($"Player unloaded: {_playerName}");
 
                 _playerName = "";
@@ -75,6 +80,8 @@ namespace Game.Core.Level
             if (_enemy != null)
             {
                 _assetManager.UnloadAsset(_enemyName);
+                _characterRegistry.Unregister(_enemy);
+
                 Debug.LogError($"Enemy unloaded: {_enemyName}");
 
                 _enemyName = "";
@@ -98,6 +105,7 @@ namespace Game.Core.Level
             var spawnPoint = _level.PlayerSpawnPoint;
             _player = await _characterFactory.Create(
                 name, spawnPoint.position, spawnPoint.rotation);
+            _characterRegistry.Register(_player);
 
             if (_player == null)
             {
@@ -127,6 +135,7 @@ namespace Game.Core.Level
             var spawnPoint = _level.EnemySpawnPoint;
             _enemy = await _characterFactory.Create(
                 name, spawnPoint.position, spawnPoint.rotation);
+            _characterRegistry.Register(_enemy);
 
             if (_enemy == null)
             {

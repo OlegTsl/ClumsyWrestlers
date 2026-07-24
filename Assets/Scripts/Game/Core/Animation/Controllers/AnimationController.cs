@@ -63,5 +63,11 @@ namespace Game.Core.Animation
             if (_animator != null)
                 _animator.SetTrigger(AnimationData.JumpTrigger);
         }
+
+        public void TriggerPunch()
+        {
+            if (_animator != null)
+                _animator.SetTrigger(AnimationData.PunchTrigger);
+        }
     }
 }

@@ -8,5 +8,6 @@ namespace Game.Core.Animation
         void Initialize(ICharacterView view);
         void UpdateMovementState(Vector3 velocity, bool isMoving, bool isGrounded);
         void TriggerJump();
+        void TriggerPunch();
     }
 }

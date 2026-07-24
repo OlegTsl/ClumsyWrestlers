@@ -1,4 +1,5 @@
 using Game.Core.Animation;
+using Game.Core.Combat;
 using Game.Core.Movement;
 using UnityEngine;
 using Zenject;
@@ -9,6 +10,8 @@ namespace Game.Core.Character
     {
         private readonly IMovementController  _movementController;
         private readonly IAnimationController _animationController;
+        private readonly IDamageController    _damageController;
+        private readonly IHitController       _hitController;
         
         private Rigidbody _rigidbody;
 
@@ -17,17 +20,25 @@ namespace Game.Core.Character
 
         public EnemyController(
             IMovementController  movementController,
-            IAnimationController animationController
+            IAnimationController animationController,
+            IDamageController    damageController,
+            IHitController       hitController
         )
         {
             _movementController  = movementController;
             _animationController = animationController;
+            _damageController    = damageController;
+            _hitController       = hitController;
         }
 
         public void Initialize(ICharacterView view)
         {
             _movementController.Initialize(view);
             _animationController.Initialize(view);
+            _hitController.Initialize(view.AttackColliders);
+            _damageController.Initialize(view.Transform, view.Data.AttackSettings,
+                _hitController, _movementController);
+            view.ColliderHandler.Initialize(_hitController);
 
             _rigidbody = view.Rigidbody;
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;

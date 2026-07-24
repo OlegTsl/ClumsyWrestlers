@@ -159,10 +159,9 @@ namespace Game.Core.Movement
         
         public void ApplyExternalForce(Vector3 force)
         {
-            _rigidbody.AddForce(force, ForceMode.Impulse);
-            
+            _horizontalVelocity += new Vector3(force.x, 0, force.z);
+            _verticalVelocity += force.y;
             _isGrounded = false;
-            _verticalVelocity = force.y;
         }
     }
 }

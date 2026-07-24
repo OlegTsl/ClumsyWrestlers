@@ -6,16 +6,19 @@ namespace Game.Core.Character
     public class CharacterData : ScriptableObject
     {
         [Header("General")]
-        [SerializeField] private string _characterName = "str_ortiz";
-        [SerializeField] private float  _mass = 80f;
+        [SerializeField] private string _characterName = "str_ortis";
+        [SerializeField] private float  _characterMass = 80f;
         
         [Header("Movement")]
-        [SerializeField] private MovementSettings _movement = new MovementSettings();
+        [SerializeField] private MovementSettings _movement;
+        public MovementSettings Movement => _movement;
+
+        [Header("Combat")]
+        [SerializeField] private AttackSettings _attackSettings;
+        public AttackSettings AttackSettings => _attackSettings;
         
         public string CharacterName => _characterName;
-        public float Mass           => _mass;
-
-        public MovementSettings Movement => _movement;
+        public float  CharacterMass => _characterMass;
     }
     
     [System.Serializable]
@@ -33,5 +36,17 @@ namespace Game.Core.Character
         
         [Header("Air Control")]
         [Range(0f, 1f)]   public float AirControlFactor;
+    }
+
+    [System.Serializable]
+    public struct AttackSettings
+    {
+        [Header("Simple Attack")]
+        [Range(0f, 100f)] public float SimpleAttackDamage;
+        [Range(0f, 50f)]  public float SimpleAttackKnockback;
+        [Range(0.1f, 2f)] public float SimpleAttackDuration;
+        [Range(0f, 0.2f)] public float SimpleAttackHitStop;
+        [Range(0f, 2f)]   public float SimpleAttackHitboxStart;
+        [Range(0f, 2f)]   public float SimpleAttackHitboxEnd;
     }
 }
