@@ -7,7 +7,7 @@ namespace Game.Common.Input
         public SimpleAttackAction(InputEventType eventType)
             => EventType = eventType;
         
-        public void Publish(InputEventBus eventBus)
+        public void Publish(InputEventsBus eventBus)
             => eventBus.Publish(this);
     }
 }

@@ -1,6 +1,4 @@
-﻿using Game.Core.Animation; 
-using Game.Core.Character;
-using Game.Core.Combat;
+﻿using Game.Core.Character;
 using Game.Core.Controllers;
 using Game.Core.Level;
 using Game.Core.Movement;
@@ -20,10 +18,7 @@ namespace Game.Core.Installers
 
             LevelInstaller.Install(Container);
             CharacterInstaller.Install(Container);
-            MovementInstaller.Install(Container);
-            AnimationInstaller.Install(Container);
             RoundInstaller.Install(Container);
-            CombatInstaller.Install(Container);
         }
     }
 }

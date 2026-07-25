@@ -20,8 +20,8 @@ namespace Game.Core.Round
 
             if (_levelController.IsLevelLoaded())
             {
-                await _levelController.SpawnPlayer("Wrestler");
-                await _levelController.SpawnEnemy("Wrestler");
+                await _levelController.SpawnCharacter("Wrestler", true);
+                await _levelController.SpawnCharacter("Wrestler", false);
             }
         }
 

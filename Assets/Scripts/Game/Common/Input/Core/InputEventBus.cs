@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Game.Common.Input
 {
-    public sealed class InputEventBus
+    public sealed class InputEventsBus
     {
         private readonly Dictionary<Type, Delegate> _handlers = new();
 

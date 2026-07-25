@@ -7,7 +7,7 @@ namespace Game.Core.Combat
 {
     public class CombatController : ICombatController, System.IDisposable
     {
-        private readonly InputEventBus  _inputEventsBus;
+        private readonly InputEventsBus _inputEventsBus;
         private readonly GameEventsBus  _gameEventsBus;
         private readonly AttackSettings _settings;
         private readonly ICharacterView _view;
@@ -20,7 +20,7 @@ namespace Game.Core.Combat
         public CombatController(
             ICharacterView view,
             AttackSettings settings,
-            InputEventBus  inputEventsBus,
+            InputEventsBus inputEventsBus,
             GameEventsBus  gameEventsBus
         )
         {

@@ -1,14 +1,13 @@
 using System;
 using Game.Common.Input;
-using Game.Core.Character;
 using UnityEngine;
 using Zenject;
 
 namespace Game.Core.Movement
 {
-    public class LookController : ILookController, ILateTickable, IDisposable
+    public class LookController : ILookController, IDisposable
     {
-        private readonly InputEventBus _inputEvents;
+        private readonly InputEventsBus _inputEvents;
         
         private Transform _cameraTransform;
         private Transform _characterTransform;
@@ -17,21 +16,21 @@ namespace Game.Core.Movement
         private float _pitch;
         private float _yaw;
         
-        public LookController(InputEventBus inputEvents)
+        public LookController(
+            Transform      characterTransform,
+            Transform      cameraTransform,
+            InputEventsBus inputEvents)
         {
+            _characterTransform = characterTransform;
+            _cameraTransform    = cameraTransform;
+            
+            _yaw   = _characterTransform.eulerAngles.y;
+            _pitch = _cameraTransform.localEulerAngles.x;
+
             _inputEvents = inputEvents;
             _inputEvents.Subscribe<LookInput>(OnLook);
         }
-        
-        public void Initialize(ICharacterView view)
-        {
-            _cameraTransform = view.CharacterCamera.transform;
-            _characterTransform = view.Transform;
-            
-            _yaw = _characterTransform.eulerAngles.y;
-            _pitch = _cameraTransform.localEulerAngles.x;
-        }
-        
+                
         private void OnLook(LookInput input)
             => _lookDelta += input.Delta;
         

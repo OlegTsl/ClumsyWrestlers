@@ -9,7 +9,6 @@ namespace Game.Core.Level
 
         bool IsLevelLoaded();
 
-        UniTask SpawnPlayer(string name);
-        UniTask SpawnEnemy(string name);
+        UniTask SpawnCharacter(string name, bool isPlayer);
     }
 }

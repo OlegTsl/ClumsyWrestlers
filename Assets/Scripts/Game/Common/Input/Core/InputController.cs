@@ -7,12 +7,12 @@ namespace Game.Common.Input
     public sealed class InputController : ITickable
     {
         private readonly List<IInputSource> _sources;
-        private readonly InputEventBus      _eventBus;
+        private readonly InputEventsBus     _eventBus;
 
         private bool _wasMoveActive;
         private bool _wasLookActive;
 
-        public InputController(IEnumerable<IInputSource> sources, InputEventBus eventBus)
+        public InputController(IEnumerable<IInputSource> sources, InputEventsBus eventBus)
         {
             _sources = sources
                 .OrderByDescending(s => s.Priority)
