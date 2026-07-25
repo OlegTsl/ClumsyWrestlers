@@ -46,13 +46,13 @@ namespace Game.Core.Character
             var context = new CharacterContext
             {
                 View        = view,
-                Animation   = new AnimationController(view.Transform,      view.Animator,                  gameEventsBus                          ),
                 Movement    = new MovementController (view.Transform,      view.Rigidbody,                 view.Data.Movement                     ),
+                Animation   = new AnimationController(view.Transform,      view.Animator,                  gameEventsBus                          ),
+                Look        = new LookController     (view.Transform,      view.CharacterCamera.transform,                     inputEventsBus     ),
+                Combat      = new CombatController   (                     view.Data.AttackSettings,       gameEventsBus,      inputEventsBus     ),
                 Damage      = new DamageController   (view.Transform,      view.Data.AttackSettings,       gameEventsBus,      _charactersRegistry),
-                Look        = new LookController     (view.Transform,      view.CharacterCamera.transform, inputEventsBus                         ),
-                Combat      = new CombatController   (view,                view.Data.AttackSettings,       inputEventsBus,     gameEventsBus      ),
-                Hit         = new HitController      (_charactersRegistry, gameEventsBus                                                          ),
-                Input       = new InputController    (inputSources,        inputEventsBus),
+                Hit         = new HitController      (                                                     gameEventsBus,      _charactersRegistry),
+                Input       = new InputController    (inputSources,                                                            inputEventsBus     ),
                 InputEvents = inputEventsBus,
                 GameEvents  = gameEventsBus,
                 CharacterId = Guid.NewGuid()

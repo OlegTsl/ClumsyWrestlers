@@ -11,40 +11,29 @@ namespace Game.Core.Combat
         private readonly ICharactersRegistry _charactersRegistry;
         private readonly GameEventsBus       _gameEventsBus;
         
-        private IReadOnlyList<Collider> _colliders;
-        private List<Collider>          _hitTargets = new();
-
-        private bool _isEnabled;
+        private List<Collider> _hitTargets = new();
+        private bool           _isEnabled;
 
         public event Action<Collider> OnHit;
 
         public HitController(
-            ICharactersRegistry charactersRegistry,
-            GameEventsBus       gameEventsBus
+            GameEventsBus       gameEventsBus,
+            ICharactersRegistry charactersRegistry
         )
         {
             _charactersRegistry = charactersRegistry;
             _gameEventsBus      = gameEventsBus;
 
-            _gameEventsBus.Subscribe<OnPunchStartedEvent>(OnPunchStarted);
-            _gameEventsBus.Subscribe<OnPunchEndedEvent>(OnPunchEnded);
+            _gameEventsBus.Subscribe<OnHitBoxEnabledEvent>(OnHitBoxEnabled);
         }
 
-        public void Initialize(IReadOnlyList<Collider> colliders)
+        private void OnHitBoxEnabled(OnHitBoxEnabledEvent evt)
         {
-            _colliders = colliders;
-            
-            foreach (var collider in _colliders)
-            {
-                collider.isTrigger = true;
-            }
+            if (evt.Enabled)
+                Enable();
+            else
+                Disable();
         }
-
-        private void OnPunchStarted(OnPunchStartedEvent evt)
-            => Enable();
-
-        private void OnPunchEnded(OnPunchEndedEvent evt)
-            => Disable();
 
         public void Enable()
         {
@@ -72,9 +61,6 @@ namespace Game.Core.Combat
         }
 
         public void Dispose()
-        {
-            _gameEventsBus.Unsubscribe<OnPunchStartedEvent>(OnPunchStarted);
-            _gameEventsBus.Unsubscribe<OnPunchEndedEvent>(OnPunchEnded);
-        }
+            => _gameEventsBus.Unsubscribe<OnHitBoxEnabledEvent>(OnHitBoxEnabled);
     }
 }

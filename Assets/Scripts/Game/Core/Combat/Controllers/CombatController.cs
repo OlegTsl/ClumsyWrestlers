@@ -10,7 +10,6 @@ namespace Game.Core.Combat
         private readonly InputEventsBus _inputEventsBus;
         private readonly GameEventsBus  _gameEventsBus;
         private readonly AttackSettings _settings;
-        private readonly ICharacterView _view;
 
         private bool  _isEnabled = true;
         private bool  _isAttacking;
@@ -18,13 +17,11 @@ namespace Game.Core.Combat
         private float _attackElapsed;
 
         public CombatController(
-            ICharacterView view,
             AttackSettings settings,
-            InputEventsBus inputEventsBus,
-            GameEventsBus  gameEventsBus
+            GameEventsBus  gameEventsBus,
+            InputEventsBus inputEventsBus
         )
         {
-            _view           = view;
             _settings       = settings;
             _inputEventsBus = inputEventsBus;
             _gameEventsBus  = gameEventsBus;
@@ -69,6 +66,8 @@ namespace Game.Core.Combat
         {
             SetHitboxActive(false);
             _isAttacking = false;
+
+            _gameEventsBus.Publish(new OnPunchEndedEvent());
         }
 
         public void CancelAttack()
@@ -82,8 +81,8 @@ namespace Game.Core.Combat
             if (_isHitboxActive == active)
                 return;
 
-            _view.RightArmCollider.enabled = active;
             _isHitboxActive = active;
+            _gameEventsBus.Publish(new OnHitBoxEnabledEvent(active));
         }
 
         public void Enable()
