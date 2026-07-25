@@ -1,41 +1,35 @@
 using Game.Common.Input;
-using Game.Core.Animation;
 using Game.Core.Character;
+using Game.Core.Events;
 using UnityEngine;
 
 namespace Game.Core.Combat
 {
     public class CombatController : ICombatController, System.IDisposable
     {
-        private readonly InputEventBus _inputEvents;
+        private readonly InputEventBus  _inputEventsBus;
+        private readonly GameEventsBus  _gameEventsBus;
+        private readonly AttackSettings _settings;
+        private readonly ICharacterView _view;
 
-        private IAnimationController _animationController;
-        private ICharacterView       _view;
-        private AttackSettings       _attackSettings;
-        private IHitController       _hitController;
-
-        private bool  _isEnabled;
+        private bool  _isEnabled = true;
         private bool  _isAttacking;
         private bool  _isHitboxActive;
         private float _attackElapsed;
 
-        public CombatController(InputEventBus inputEvents)
-        {
-            _inputEvents = inputEvents;
-            _inputEvents.Subscribe<SimpleAttackAction>(OnSimpleAttack);
-        }
-
-        public void Initialize(
-            ICharacterView       view,
-            IAnimationController animationController,
-            IHitController       hitController
+        public CombatController(
+            ICharacterView view,
+            AttackSettings settings,
+            InputEventBus  inputEventsBus,
+            GameEventsBus  gameEventsBus
         )
         {
-            _view                = view;
-            _animationController = animationController;
-            _hitController       = hitController;
-            _attackSettings      = view.Data.AttackSettings;
-            _isEnabled           = true;
+            _view           = view;
+            _settings       = settings;
+            _inputEventsBus = inputEventsBus;
+            _gameEventsBus  = gameEventsBus;
+            
+            _inputEventsBus.Subscribe<SimpleAttackAction>(OnSimpleAttack);
         }
 
         public void FixedTick()
@@ -45,18 +39,18 @@ namespace Game.Core.Combat
 
             _attackElapsed += Time.fixedDeltaTime;
 
-            bool shouldBeActive = _attackElapsed >= _attackSettings.SimpleAttackHitboxStart
-                               && _attackElapsed <  _attackSettings.SimpleAttackHitboxEnd;
+            bool shouldBeActive = _attackElapsed >= _settings.SimpleAttackHitboxStart
+                               && _attackElapsed <  _settings.SimpleAttackHitboxEnd;
 
             SetHitboxActive(shouldBeActive);
 
-            if (_attackElapsed >= _attackSettings.SimpleAttackDuration)
+            if (_attackElapsed >= _settings.SimpleAttackDuration)
                 EndAttack();
         }
 
         private void OnSimpleAttack(SimpleAttackAction action)
         {
-            if (!_isEnabled || _view == null || _isAttacking)
+            if (!_isEnabled || _isAttacking)
                 return;
 
             if (action.EventType == InputEventType.Pressed)
@@ -67,15 +61,14 @@ namespace Game.Core.Combat
         {
             _isAttacking   = true;
             _attackElapsed = 0f;
-            _animationController.TriggerPunch();
-            _hitController.Enable();
+
+            _gameEventsBus.Publish(new OnPunchStartedEvent());
         }
 
         private void EndAttack()
         {
             SetHitboxActive(false);
             _isAttacking = false;
-            _hitController.Disable();
         }
 
         public void CancelAttack()
@@ -103,6 +96,6 @@ namespace Game.Core.Combat
         }
 
         public void Dispose()
-            => _inputEvents.Unsubscribe<SimpleAttackAction>(OnSimpleAttack);
+            => _inputEventsBus.Unsubscribe<SimpleAttackAction>(OnSimpleAttack);
     }
 }

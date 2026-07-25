@@ -1,17 +1,26 @@
-using Game.Core.Character;
+using System;
+using Game.Core.Events;
 using UnityEngine;
 
 namespace Game.Core.Animation
 {
-    public class AnimationController : IAnimationController
+    public class AnimationController : IAnimationController, IDisposable
     {
-        private Animator  _animator;
-        private Transform _transform;
-        
-        public void Initialize(ICharacterView view)
+        private readonly Transform     _transform;
+        private readonly Animator      _animator;
+        private readonly GameEventsBus _eventsBus;
+
+        public AnimationController(
+            Transform     transform,
+            Animator      animator,
+            GameEventsBus eventsBus
+        )
         {
-            _animator  = view.Animator;
-            _transform = view.Transform;
+            _transform = transform;
+            _animator  = animator;
+            _eventsBus = eventsBus;
+
+            _eventsBus.Subscribe<OnPunchStartedEvent>(OnPunchStarted);
         }
         
         public void UpdateMovementState(Vector3 velocity, bool isMoving, bool isGrounded)
@@ -58,6 +67,9 @@ namespace Game.Core.Animation
             _animator.SetBool(AnimationData.Grounded, isGrounded);
         }
 
+        private void OnPunchStarted(OnPunchStartedEvent evt)
+            => TriggerPunch();
+
         public void TriggerJump()
         {
             if (_animator != null)
@@ -69,5 +81,8 @@ namespace Game.Core.Animation
             if (_animator != null)
                 _animator.SetTrigger(AnimationData.PunchTrigger);
         }
+
+        public void Dispose()
+            => _eventsBus.Unsubscribe<OnPunchStartedEvent>(OnPunchStarted);
     }
 }

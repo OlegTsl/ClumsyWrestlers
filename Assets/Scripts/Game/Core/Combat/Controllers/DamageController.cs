@@ -1,36 +1,45 @@
+using System;
 using Game.Core.Character;
-using Game.Core.Movement;
+using Game.Core.Events;
 using UnityEngine;
 
 namespace Game.Core.Combat
 {
-    public class DamageController : IDamageController
+    public class DamageController : IDamageController, IDisposable
     {
-        private IMovementController _movementController;
-        private AttackSettings      _settings;
-        private Transform           _transform;
-
-        public void Initialize(
+        private readonly AttackSettings      _settings;
+        private readonly Transform           _transform;
+        private readonly GameEventsBus       _gameEventsBus;
+        private readonly ICharactersRegistry _charactersRegistry;
+        
+        public DamageController(
             Transform           transform,
             AttackSettings      settings,
-            IHitController      hitController,
-            IMovementController movementController
+            GameEventsBus       gameEventsBus,
+            ICharactersRegistry charactersRegistry
         )
         {
             _transform          = transform;
             _settings           = settings;
-            _movementController = movementController;
-            
-            hitController.OnHit += ApplyDamage;
+            _gameEventsBus      = gameEventsBus;
+            _charactersRegistry = charactersRegistry;
+
+            _gameEventsBus.Subscribe<OnPunchLandedEvent>(ApplyDamage);
         }
 
-        private void ApplyDamage(Collider target)
+        private void ApplyDamage(OnPunchLandedEvent evt)
         {
-            Vector3 direction = (target.transform.position - _transform.position).normalized;
-            _movementController.ApplyExternalForce(direction * _settings.SimpleAttackKnockback);
+            var context = _charactersRegistry.GetContext(evt.CharacterID);
+            if (context == null)
+                return;
 
-            Vector3 force = direction * _settings.SimpleAttackKnockback;
-            Debug.Log($"ApplyDamage: target={target.name}, direction={direction}, force={force}");
+            Collider target   = context.View.HitBox;
+            
+            Vector3 direction = (target.transform.position - _transform.position).normalized;
+            context.Movement.ApplyExternalForce(direction * _settings.SimpleAttackKnockback);
         }
+
+        public void Dispose()
+            => _gameEventsBus.Unsubscribe<OnPunchLandedEvent>(ApplyDamage);
     }
 }

@@ -10,54 +10,32 @@ namespace Game.Core.Character
 {
     public class CharacterController : ICharacterController, ILateTickable, IFixedTickable, IDisposable
     {
-        private readonly InputEventBus        _inputEvents;
-        private readonly IMovementController  _movementController;
-        private readonly IAnimationController _animationController;
-        private readonly ICombatController    _combatController;
-        private readonly ILookController      _lookController;
-        private readonly IDamageController    _damageController;
-        private readonly IHitController       _hitController;
-        
-        private Rigidbody _rigidbody;
+        private readonly InputEventBus _inputEventsBus;
+
+        private IMovementController  _movementController;
+        private ICombatController    _combatController;
+        private IAnimationController _animationController;        
+        private Rigidbody         _rigidbody;
 
         private bool _isEnabled = true;
         private bool _hasMoveInput;
         private bool _isInitialized;
 
-        public CharacterController(
-            InputEventBus        inputEvents, 
-            IMovementController  movementController,
-            IAnimationController animationController,
-            ICombatController    combatController,
-            ILookController      lookController,
-            IDamageController    damageController,
-            IHitController       hitController
-        )
+        public CharacterController(InputEventBus inputEventsBus)
         {
-            _inputEvents         = inputEvents;
-            _movementController  = movementController;
-            _animationController = animationController;
-            _combatController    = combatController;
-            _lookController      = lookController;
-            _damageController    = damageController;
-            _hitController       = hitController;
-            
-            _inputEvents.Subscribe<MoveInput>(OnMove);
-            _inputEvents.Subscribe<JumpAction>(OnJump);
+            _inputEventsBus = inputEventsBus;
+
+            _inputEventsBus.Subscribe<MoveInput>(OnMove);
+            _inputEventsBus.Subscribe<JumpAction>(OnJump);
         }
 
-        public void Initialize(ICharacterView view)
+        public void Initialize(ICharacterContext context)
         {
-            _movementController.Initialize(view);
-            _animationController.Initialize(view);
-            _lookController.Initialize(view);
-            _hitController.Initialize(view.AttackColliders);
-            _damageController.Initialize(view.Transform, view.Data.AttackSettings,
-                _hitController, _movementController);
-            _combatController.Initialize(view, _animationController, _hitController);
-            view.ColliderHandler.Initialize(_hitController);
+            _movementController  = context.Movement;
+            _combatController    = context.Combat;
+            _animationController = context.Animation;
+            _rigidbody           = context.View.Rigidbody;
 
-            _rigidbody     = view.Rigidbody;
             _isInitialized = true;
         }
 
@@ -111,8 +89,8 @@ namespace Game.Core.Character
 
         public void Dispose()
         {
-            _inputEvents.Unsubscribe<MoveInput>(OnMove);
-            _inputEvents.Unsubscribe<JumpAction>(OnJump);
+            _inputEventsBus.Unsubscribe<MoveInput>(OnMove);
+            _inputEventsBus.Unsubscribe<JumpAction>(OnJump);
         }
     }
 }

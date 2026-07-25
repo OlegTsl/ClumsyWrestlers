@@ -7,33 +7,33 @@ namespace Game.Core.Level
 {
     public class LevelController : ILevelController
     {
-        private readonly IAssetManager        _assetManager;
-        private readonly ICharacterFactory    _characterFactory;
-        private readonly ICharacterController _characterController;
-        private readonly IEnemyController     _enemyController;
-        private readonly ICharacterRegistry   _characterRegistry;
+        private readonly IAssetManager            _assetManager;
+        private readonly ICharacterController     _characterController;
+        private readonly IEnemyController         _enemyController;
+        private readonly ICharactersRegistry      _charactersRegistry;
+        private readonly ICharacterContextBuilder _characterContextBuilder;
 
-        private ILevelView     _level;
-        private ICharacterView _player;
-        private ICharacterView _enemy;
+        private ILevelView        _level;
+        private ICharacterContext _playerContext;
+        private ICharacterContext _enemyContext;
 
         private string _levelName;
         private string _playerName;
         private string _enemyName;
 
         public LevelController(
-            IAssetManager        assetManager,
-            ICharacterFactory    characterFactory,
-            ICharacterController characterController,
-            IEnemyController     enemyController,
-            ICharacterRegistry   characterRegistry
+            IAssetManager            assetManager,
+            ICharacterController     characterController,
+            IEnemyController         enemyController,
+            ICharactersRegistry      charactersRegistry,
+            ICharacterContextBuilder characterContextBuilder
         )
         {
-            _assetManager        = assetManager;
-            _characterFactory    = characterFactory;
-            _characterController = characterController;
-            _enemyController     = enemyController;
-            _characterRegistry   = characterRegistry;
+            _assetManager            = assetManager;
+            _characterController     = characterController;
+            _enemyController         = enemyController;
+            _charactersRegistry      = charactersRegistry;
+            _characterContextBuilder = characterContextBuilder;
         }
 
         public async UniTask LoadLevel(string address)
@@ -64,28 +64,28 @@ namespace Game.Core.Level
                 _level     = null;
             }
             
-            if (_player != null)
+            if (_playerContext != null)
             {
                 _assetManager.UnloadAsset(_playerName);
-                _characterRegistry.Unregister(_player);
+                _charactersRegistry.Unregister(_playerContext);
                 
                 Debug.LogError($"Player unloaded: {_playerName}");
 
-                _playerName = "";
-                _player     = null;
+                _playerName    = "";
+                _playerContext = null;
 
                 _characterController.Disable();
             }
 
-            if (_enemy != null)
+            if (_enemyContext != null)
             {
                 _assetManager.UnloadAsset(_enemyName);
-                _characterRegistry.Unregister(_enemy);
+                _charactersRegistry.Unregister(_enemyContext);
 
                 Debug.LogError($"Enemy unloaded: {_enemyName}");
 
-                _enemyName = "";
-                _enemy     = null;
+                _enemyName    = "";
+                _enemyContext = null;
 
                 _enemyController.Disable();
             }
@@ -103,23 +103,24 @@ namespace Game.Core.Level
             }
 
             var spawnPoint = _level.PlayerSpawnPoint;
-            _player = await _characterFactory.Create(
+            _playerContext = await _characterContextBuilder.BuildPlayerContext(
                 name, spawnPoint.position, spawnPoint.rotation);
-            _characterRegistry.Register(_player);
-
-            if (_player == null)
+            
+            if (_playerContext == null)
             {
                 Debug.LogError($"Failed to load character: {name}");
                 return;
             }
+
+            _charactersRegistry.Register(_playerContext);
             
-            _characterController.Initialize(_player);
+            _characterController.Initialize(_playerContext);
             _characterController.Enable();
             
             _playerName = name;
 
-            _player.SetAsPlayer(true);
-            _player.Show();
+            _playerContext.View.SetAsPlayer(true);
+            _playerContext.View.Show();
 
             Debug.Log($"Player loaded: {name}");
         }
@@ -133,23 +134,24 @@ namespace Game.Core.Level
             }
 
             var spawnPoint = _level.EnemySpawnPoint;
-            _enemy = await _characterFactory.Create(
+            _enemyContext = await _characterContextBuilder.BuildPlayerContext(
                 name, spawnPoint.position, spawnPoint.rotation);
-            _characterRegistry.Register(_enemy);
 
-            if (_enemy == null)
+            if (_enemyContext == null)
             {
                 Debug.LogError($"Failed to load enemy: {name}");
                 return;
             }
 
-            _enemyController.Initialize(_enemy);
+            _charactersRegistry.Register(_enemyContext);
+
+            _enemyController.Initialize(_enemyContext);
             _enemyController.Enable();
 
             _enemyName = name;
 
-            _enemy.SetAsPlayer(false);
-            _enemy.Show();
+            _enemyContext.View.SetAsPlayer(false);
+            _enemyContext.View.Show();
 
             Debug.Log($"Enemy loaded: {name}");
         }

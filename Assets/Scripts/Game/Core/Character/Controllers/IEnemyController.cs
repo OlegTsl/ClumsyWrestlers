@@ -2,7 +2,7 @@ namespace Game.Core.Character
 {
     public interface IEnemyController
     {
-        void Initialize(ICharacterView view);
+        void Initialize(ICharacterContext context);
         void Enable();
         void Disable();
     }

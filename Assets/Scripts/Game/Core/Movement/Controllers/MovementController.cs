@@ -5,9 +5,9 @@ namespace Game.Core.Movement
 {
     public class MovementController : IMovementController
     {
-        private Rigidbody        _rigidbody;
-        private Transform        _characterTransform;
-        private MovementSettings _settings;
+        private readonly Rigidbody        _rigidbody;
+        private readonly Transform        _transform;
+        private readonly MovementSettings _settings;
         
         private Vector3 _moveDirection;
         private Vector3 _airVelocity;
@@ -19,12 +19,16 @@ namespace Game.Core.Movement
         private Vector3 _horizontalVelocity;
 
         public bool IsGrounded => _isGrounded;
-        
-        public void Initialize(ICharacterView view)
+
+        public MovementController(
+            Transform        transform,
+            Rigidbody        rigidbody,
+            MovementSettings settings
+        )
         {
-            _rigidbody          = view.Rigidbody;
-            _characterTransform = view.Transform;
-            _settings           = view.Data.Movement;
+            _transform = transform;
+            _rigidbody = rigidbody;
+            _settings  = settings;
         }
         
         public void SetMoveDirection(Vector3 direction)
@@ -62,7 +66,7 @@ namespace Game.Core.Movement
 
         private void UpdateGroundMovement()
         {
-            Vector3 worldDirection = _characterTransform.TransformDirection(_moveDirection);
+            Vector3 worldDirection = _transform.TransformDirection(_moveDirection);
             
             float currentSpeed = _horizontalVelocity.magnitude;
             float targetSpeed  = worldDirection.magnitude > 0.01f ? _settings.RunSpeed : 0f;
@@ -88,7 +92,7 @@ namespace Game.Core.Movement
 
         private void UpdateAirMovement()
         {
-            Vector3 worldDirection = _characterTransform.TransformDirection(_moveDirection);
+            Vector3 worldDirection = _transform.TransformDirection(_moveDirection);
             
             if (worldDirection.magnitude > 0.01f)
             {
@@ -96,7 +100,7 @@ namespace Game.Core.Movement
                 
                 if (currentSpeed < 1f)
                 {
-                    float targetSpeed = _settings.RunSpeed * _settings.AirControlFactor;
+                    float targetSpeed  = _settings.RunSpeed * _settings.AirControlFactor;
                     float acceleration = _settings.Acceleration * _settings.AirControlFactor;
                     
                     float newSpeed = Mathf.MoveTowards(

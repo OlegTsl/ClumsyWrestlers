@@ -5,7 +5,6 @@ namespace Game.Core.Movement
 {
     public interface IMovementController
     {
-        void Initialize(ICharacterView view);
         void SetMoveDirection(Vector3 direction);
         void ApplyExternalForce(Vector3 force);
         void Jump();
