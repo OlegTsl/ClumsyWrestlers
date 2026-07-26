@@ -1,24 +1,18 @@
 using System;
 using Game.Common.Input;
-using Game.Core.Animation;
-using Game.Core.Combat;
 using Game.Core.Events;
-using Game.Core.Movement;
 
 namespace Game.Core.Character
 {
     public interface ICharacterContext
     {
-        ICharacterView       View        { get; }
-        IAnimationController Animation   { get; }
-        IMovementController  Movement    { get; }
-        IDamageController    Damage      { get; }
-        ICombatController    Combat      { get; }
-        ILookController      Look        { get; }
-        IHitController       Hit         { get; }
-        InputController      Input       { get; }
-        InputEventsBus       InputEvents { get; }
-        GameEventsBus        GameEvents  { get; }
-        Guid                 CharacterId { get; }
+        ICharacterView  View        { get; }
+        Guid            CharacterId { get; }
+        InputEventsBus  InputEvents { get; }
+        GameEventsBus   GameEvents  { get; }
+ 
+        void AddSystem<T>(T system) where T : class;
+        T    GetSystem<T>() where T : class;
+        bool TryGetSystem<T>(out T system) where T : class;
     }
 }

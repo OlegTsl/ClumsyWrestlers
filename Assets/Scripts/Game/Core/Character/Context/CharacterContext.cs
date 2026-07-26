@@ -1,24 +1,52 @@
 using System;
+using System.Collections.Generic;
 using Game.Common.Input;
-using Game.Core.Animation;
-using Game.Core.Combat;
 using Game.Core.Events;
-using Game.Core.Movement;
 
 namespace Game.Core.Character
 {
-    public class CharacterContext : ICharacterContext
+    public sealed class CharacterContext : ICharacterContext
     {
-        public ICharacterView       View        { get; set; }
-        public IAnimationController Animation   { get; set; }
-        public IMovementController  Movement    { get; set; }
-        public IDamageController    Damage      { get; set; }
-        public ICombatController    Combat      { get; set; }
-        public ILookController      Look        { get; set; }
-        public IHitController       Hit         { get; set; }
-        public InputController      Input       { get; set; }
-        public InputEventsBus       InputEvents { get; set; }
-        public GameEventsBus        GameEvents  { get; set; }
-        public Guid                 CharacterId { get; set; }
+        private readonly Dictionary<Type, object> _systems = new();
+ 
+        public ICharacterView  View        { get; }
+        public Guid            CharacterId { get; }
+        public InputEventsBus  InputEvents { get; }
+        public GameEventsBus   GameEvents  { get; }
+ 
+        public CharacterContext(
+            ICharacterView view,
+            Guid           characterId,
+            InputEventsBus inputEvents,
+            GameEventsBus  gameEvents)
+        {
+            View        = view;
+            CharacterId = characterId;
+            InputEvents = inputEvents;
+            GameEvents  = gameEvents;
+        }
+ 
+        public void AddSystem<T>(T system) where T : class
+            => _systems[typeof(T)] = system;
+
+        public T GetSystem<T>() where T : class
+        {
+            if (_systems.TryGetValue(typeof(T), out var system))
+                return (T)system;
+ 
+            throw new InvalidOperationException($"System {typeof(T).Name} not found! ");
+        }
+  
+        public bool TryGetSystem<T>(out T system) where T : class
+        {
+            if (_systems.TryGetValue(typeof(T), out var raw))
+            {
+                system = (T)raw;
+                return true;
+            }
+ 
+            system = null;
+            return false;
+        }
     }
 }

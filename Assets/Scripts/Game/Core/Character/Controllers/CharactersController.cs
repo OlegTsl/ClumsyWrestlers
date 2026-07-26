@@ -66,7 +66,7 @@ namespace Game.Core.Character
                 if (!entry.IsEnabled)
                     continue;
 
-                entry.Context.Input.Tick();
+                entry.Input.Tick();
             }
         }
 
@@ -77,8 +77,8 @@ namespace Game.Core.Character
                 if (!entry.IsEnabled)
                     continue;
 
-                entry.Context.Movement.FixedTick();
-                entry.Context.Combat.FixedTick();
+                entry.Movement.FixedTick();
+                entry.Combat.FixedTick();
             }
         }
 
@@ -89,13 +89,13 @@ namespace Game.Core.Character
                 if (!entry.IsEnabled)
                     continue;
 
-                entry.Context.Animation.UpdateMovementState(
+                entry.Animation.UpdateMovementState(
                     entry.Context.View.Rigidbody.velocity,
                     entry.HasMoveInput,
-                    entry.Context.Movement.IsGrounded
+                    entry.Movement.IsGrounded
                 );
 
-                entry.Context.Look?.LateTick();
+                entry.Look?.LateTick();
             }
         }
 
@@ -105,7 +105,7 @@ namespace Game.Core.Character
                 return;
 
             entry.HasMoveInput = input.Direction.magnitude > 0.01f;
-            entry.Context.Movement.SetMoveDirection(input.Direction);
+            entry.Movement.SetMoveDirection(input.Direction);
         }
 
         private void HandleJump(CharacterEntry entry, JumpAction action)
@@ -113,10 +113,10 @@ namespace Game.Core.Character
             if (!entry.IsEnabled)
                 return;
 
-            if (action.EventType == InputEventType.Pressed && entry.Context.Movement.IsGrounded)
+            if (action.EventType == InputEventType.Pressed && entry.Movement.IsGrounded)
             {
-                entry.Context.Movement.Jump();
-                entry.Context.Animation.TriggerJump();
+                entry.Movement.Jump();
+                entry.Animation.TriggerJump();
             }
         }
     }

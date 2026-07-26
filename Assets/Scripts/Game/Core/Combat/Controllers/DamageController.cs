@@ -1,6 +1,7 @@
 using System;
 using Game.Core.Character;
 using Game.Core.Events;
+using Game.Core.Movement;
 using UnityEngine;
 
 namespace Game.Core.Combat
@@ -38,8 +39,9 @@ namespace Game.Core.Combat
             Vector3 direction = target.transform.position - _transform.position;
             direction.y = 1.0f;
             direction.Normalize();
-                        
-            context.Movement.ApplyExternalForce(direction * _settings.SimpleAttackKnockback);
+
+            context.GetSystem<IMovementController>()
+                .ApplyExternalForce(direction * _settings.SimpleAttackKnockback);
         }
 
         public void Dispose()

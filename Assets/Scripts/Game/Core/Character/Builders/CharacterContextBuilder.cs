@@ -43,22 +43,33 @@ namespace Game.Core.Character
             var gameEventsBus  = new GameEventsBus();
             var inputEventsBus = new InputEventsBus();
 
-            var context = new CharacterContext
-            {
-                View        = view,
-                Movement    = new MovementController (view.Transform,      view.Rigidbody,                 view.Data.Movement                     ),
-                Animation   = new AnimationController(view.Transform,      view.Animator,                  gameEventsBus                          ),
-                Look        = new LookController     (view.Transform,      view.CharacterCamera.transform,                     inputEventsBus     ),
-                Combat      = new CombatController   (                     view.Data.AttackSettings,       gameEventsBus,      inputEventsBus     ),
-                Damage      = new DamageController   (view.Transform,      view.Data.AttackSettings,       gameEventsBus,      _charactersRegistry),
-                Hit         = new HitController      (                                                     gameEventsBus,      _charactersRegistry),
-                Input       = new InputController    (inputSources,                                                            inputEventsBus     ),
-                InputEvents = inputEventsBus,
-                GameEvents  = gameEventsBus,
-                CharacterId = Guid.NewGuid()
-            };
+            var hitController = new HitController(gameEventsBus, _charactersRegistry);
 
-            view.ColliderHandler.Initialize(context.Hit);
+            var context = new CharacterContext(
+                view, Guid.NewGuid(), inputEventsBus, gameEventsBus);
+
+            context.AddSystem(
+                new InputController(inputSources, inputEventsBus));
+
+            context.AddSystem<IMovementController>(
+                new MovementController(view.Transform, view.Rigidbody, view.Data.Movement));
+
+            context.AddSystem<IAnimationController>(
+                new AnimationController(view.Transform, view.Animator, gameEventsBus));
+
+            context.AddSystem<ILookController>(
+                new LookController(view.Transform, view.CharacterCamera.transform, inputEventsBus));
+
+            context.AddSystem<ICombatController>(
+                new CombatController(view.Data.AttackSettings, gameEventsBus, inputEventsBus));
+
+            context.AddSystem<IDamageController>(
+                new DamageController(view.Transform, view.Data.AttackSettings, gameEventsBus, _charactersRegistry));
+
+            context.AddSystem<IHitController>(
+                hitController);
+
+            view.ColliderHandler.Initialize(hitController);
             view.SetAsPlayer(isPlayer);
 
             return context;
