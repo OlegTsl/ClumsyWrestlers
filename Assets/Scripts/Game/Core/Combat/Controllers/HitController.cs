@@ -57,7 +57,7 @@ namespace Game.Core.Combat
                 return;
 
             _hitTargets.Add(collider);
-            _gameEventsBus.Publish(new OnPunchLandedEvent(characterID));
+            _gameEventsBus.Publish(new OnHitLandedEvent(characterID));
         }
 
         public void Dispose()

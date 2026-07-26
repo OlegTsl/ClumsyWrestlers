@@ -1,10 +1,11 @@
 namespace Game.Common.Input
 {
-    public readonly struct ChargedAttackAction : IActionInput
+    public readonly struct PowerAttackAction : IActionInput
     {
         public InputEventType EventType { get; }
         
-        public ChargedAttackAction(InputEventType eventType) => EventType = eventType;
+        public PowerAttackAction(InputEventType eventType)
+            => EventType = eventType;
         
         public void Publish(InputEventsBus eventBus)
             => eventBus.Publish(this);

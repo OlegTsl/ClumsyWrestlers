@@ -27,5 +27,5 @@ MonoBehaviour:
     SimpleAttackKnockback: 10
     SimpleAttackDuration: 1.1
     SimpleAttackHitStop: 0
-    SimpleAttackHitboxStart: 0.4
+    SimpleAttackHitboxStart: 0.1
     SimpleAttackHitboxEnd: 0.55

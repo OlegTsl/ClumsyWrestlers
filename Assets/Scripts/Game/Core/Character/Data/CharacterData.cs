@@ -25,28 +25,30 @@ namespace Game.Core.Character
     public struct MovementSettings
     {
         [Header("Ground Movement")]
-        [Range(0f, 20f)]  public float RunSpeed;
-        [Range(0f, 10f)]  public float WalkSpeed;
+        [Range(0f,  20f)] public float RunSpeed;
+        [Range(0f,  10f)] public float WalkSpeed;
         [Range(0f, 100f)] public float Acceleration;
         [Range(0f, 100f)] public float Deceleration;
         
         [Header("Jump")]
-        [Range(0f, 20f)]  public float JumpImpulse;
-        [Range(0f, 5f)]   public float AirborneGravityMultiplier;
+        [Range(0f, 20f)] public float JumpImpulse;
+        [Range(0f,  5f)] public float AirborneGravityMultiplier;
         
         [Header("Air Control")]
-        [Range(0f, 1f)]   public float AirControlFactor;
+        [Range(0f,  1f)] public float AirControlFactor;
     }
 
     [System.Serializable]
     public struct AttackSettings
     {
         [Header("Simple Attack")]
-        [Range(0f, 100f)] public float SimpleAttackDamage;
-        [Range(0f, 50f)]  public float SimpleAttackKnockback;
+        [Range(0f,  50f)] public float SimpleAttackKnockback;
         [Range(0.1f, 2f)] public float SimpleAttackDuration;
-        [Range(0f, 0.2f)] public float SimpleAttackHitStop;
-        [Range(0f, 2f)]   public float SimpleAttackHitboxStart;
-        [Range(0f, 2f)]   public float SimpleAttackHitboxEnd;
+        [Range(0f,   2f)] public float SimpleAttackHitboxStart;
+        [Range(0f,   2f)] public float SimpleAttackHitboxEnd;
+
+        [Header("Powered Attack")]
+        [Range(0f,  50f)] public float PoweredAttackKnockback;
+        [Range(0.1f, 5f)] public float PoweredAttackDuration;
     }
 }

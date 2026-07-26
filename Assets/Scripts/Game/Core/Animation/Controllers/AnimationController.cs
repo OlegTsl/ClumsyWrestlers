@@ -21,6 +21,7 @@ namespace Game.Core.Animation
             _eventsBus = eventsBus;
 
             _eventsBus.Subscribe<OnPunchStartedEvent>(OnPunchStarted);
+            _eventsBus.Subscribe<OnPowerPunchStartedEvent>(OnPowerPunchStarted);
         }
         
         public void UpdateMovementState(Vector3 velocity, bool isMoving, bool isGrounded)
@@ -70,16 +71,25 @@ namespace Game.Core.Animation
         private void OnPunchStarted(OnPunchStartedEvent evt)
             => TriggerPunch();
 
+         private void OnPowerPunchStarted(OnPowerPunchStartedEvent evt)
+            => TriggerPowerPunch();
+
         public void TriggerJump()
         {
             if (_animator != null)
                 _animator.SetTrigger(AnimationData.JumpTrigger);
         }
 
-        public void TriggerPunch()
+        private void TriggerPunch()
         {
             if (_animator != null)
                 _animator.SetTrigger(AnimationData.PunchTrigger);
+        }
+
+        private void TriggerPowerPunch()
+        {
+            if (_animator != null)
+                _animator.SetTrigger(AnimationData.PowerPunchTrigger);
         }
 
         public void Dispose()

@@ -46,11 +46,11 @@ namespace Game.Common.Input
 
             bool rmbPressed = UnityEngine.Input.GetMouseButton(1);
             if (rmbPressed && !_wasRmbPressed)
-                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Pressed));
+                _actionBuffer.Add(new PowerAttackAction(InputEventType.Pressed));
             else if (!rmbPressed && _wasRmbPressed)
-                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Released));
+                _actionBuffer.Add(new PowerAttackAction(InputEventType.Released));
             else if (rmbPressed)
-                _actionBuffer.Add(new ChargedAttackAction(InputEventType.Held));
+                _actionBuffer.Add(new PowerAttackAction(InputEventType.Held));
             _wasRmbPressed = rmbPressed;
 
             return _actionBuffer;

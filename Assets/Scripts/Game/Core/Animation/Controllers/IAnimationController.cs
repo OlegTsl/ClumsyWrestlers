@@ -6,6 +6,5 @@ namespace Game.Core.Animation
     {
         void UpdateMovementState(Vector3 velocity, bool isMoving, bool isGrounded);
         void TriggerJump();
-        void TriggerPunch();
     }
 }

@@ -24,22 +24,25 @@ namespace Game.Core.Combat
             _gameEventsBus      = gameEventsBus;
             _charactersRegistry = charactersRegistry;
 
-            _gameEventsBus.Subscribe<OnPunchLandedEvent>(ApplyDamage);
+            _gameEventsBus.Subscribe<OnHitLandedEvent>(ApplyDamage);
         }
 
-        private void ApplyDamage(OnPunchLandedEvent evt)
+        private void ApplyDamage(OnHitLandedEvent evt)
         {
             var context = _charactersRegistry.GetContext(evt.CharacterID);
             if (context == null)
                 return;
 
             Collider target   = context.View.HitBox;
-            
-            Vector3 direction = (target.transform.position - _transform.position).normalized;
+
+            Vector3 direction = target.transform.position - _transform.position;
+            direction.y = 1.0f;
+            direction.Normalize();
+                        
             context.Movement.ApplyExternalForce(direction * _settings.SimpleAttackKnockback);
         }
 
         public void Dispose()
-            => _gameEventsBus.Unsubscribe<OnPunchLandedEvent>(ApplyDamage);
+            => _gameEventsBus.Unsubscribe<OnHitLandedEvent>(ApplyDamage);
     }
 }

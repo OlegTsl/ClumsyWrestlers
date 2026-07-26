@@ -12,7 +12,8 @@ namespace Game.Core.Combat
         private readonly AttackSettings _settings;
 
         private bool  _isEnabled = true;
-        private bool  _isAttacking;
+        private bool  _isSimpleAttack;
+        private bool  _isPowerAttack;
         private bool  _isHitboxActive;
         private float _attackElapsed;
 
@@ -27,13 +28,36 @@ namespace Game.Core.Combat
             _gameEventsBus  = gameEventsBus;
             
             _inputEventsBus.Subscribe<SimpleAttackAction>(OnSimpleAttack);
+            _inputEventsBus.Subscribe<PowerAttackAction>(OnPowerAttack);
         }
 
         public void FixedTick()
         {
-            if (!_isAttacking)
-                return;
+            if (_isSimpleAttack)
+                HandleSimpleAttack();
 
+            if (_isPowerAttack)
+                HandlePowerAttack();
+        }
+
+        private void StartSimpleAttack()
+        {
+            _isSimpleAttack = true;
+            _attackElapsed  = 0f;
+
+            _gameEventsBus.Publish(new OnPunchStartedEvent());
+        }
+
+        private void EndSimpleAttack()
+        {
+            SetHitboxActive(false);
+            _isSimpleAttack = false;
+
+            _gameEventsBus.Publish(new OnPunchEndedEvent());
+        }
+
+        private void HandleSimpleAttack()
+        {
             _attackElapsed += Time.fixedDeltaTime;
 
             bool shouldBeActive = _attackElapsed >= _settings.SimpleAttackHitboxStart
@@ -42,38 +66,56 @@ namespace Game.Core.Combat
             SetHitboxActive(shouldBeActive);
 
             if (_attackElapsed >= _settings.SimpleAttackDuration)
-                EndAttack();
+                EndSimpleAttack();
         }
 
         private void OnSimpleAttack(SimpleAttackAction action)
         {
-            if (!_isEnabled || _isAttacking)
+            if (!_isEnabled || _isSimpleAttack || _isPowerAttack)
                 return;
 
             if (action.EventType == InputEventType.Pressed)
-                StartAttack();
+                StartSimpleAttack();
         }
 
-        private void StartAttack()
+        private void StartPowerAttack()
         {
-            _isAttacking   = true;
-            _attackElapsed = 0f;
+            _isPowerAttack = true;
+            _attackElapsed   = 0f;
 
-            _gameEventsBus.Publish(new OnPunchStartedEvent());
+            _gameEventsBus.Publish(new OnPowerPunchStartedEvent());
         }
 
-        private void EndAttack()
+        private void EndPowerAttack()
         {
-            SetHitboxActive(false);
-            _isAttacking = false;
+            _isPowerAttack = false;
+            _gameEventsBus.Publish(new OnPowerPunchEndedEvent());
+        }
 
-            _gameEventsBus.Publish(new OnPunchEndedEvent());
+        private void HandlePowerAttack()
+        {
+            _attackElapsed += Time.fixedDeltaTime;
+
+            if (_attackElapsed >= _settings.PoweredAttackDuration)
+                EndPowerAttack();
+        }
+
+        private void OnPowerAttack(PowerAttackAction action)
+        {
+            if (!_isEnabled || _isSimpleAttack || _isPowerAttack)
+                return;
+
+            if (action.EventType == InputEventType.Pressed)
+                StartPowerAttack();
         }
 
         public void CancelAttack()
         {
-            if (_isAttacking)
-                EndAttack();
+            if (_isSimpleAttack)
+                EndSimpleAttack();
+
+            if (_isPowerAttack)
+                EndPowerAttack();
         }
 
         private void SetHitboxActive(bool active)
