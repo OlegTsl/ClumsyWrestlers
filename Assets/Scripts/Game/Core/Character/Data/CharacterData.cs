@@ -14,8 +14,8 @@ namespace Game.Core.Character
         public MovementSettings Movement => _movement;
 
         [Header("Combat")]
-        [SerializeField] private AttackSettings _attackSettings;
-        public AttackSettings AttackSettings => _attackSettings;
+        [SerializeField] private CombatSettings _combatSettings;
+        public CombatSettings CombatSettings => _combatSettings;
         
         public string CharacterName => _characterName;
         public float  CharacterMass => _characterMass;
@@ -36,10 +36,11 @@ namespace Game.Core.Character
         
         [Header("Air Control")]
         [Range(0f,  1f)] public float AirControlFactor;
+        [Range(0f,  5f)] public float FallingDelay;
     }
 
     [System.Serializable]
-    public struct AttackSettings
+    public struct CombatSettings
     {
         [Header("Simple Attack")]
         [Range(0f,  50f)] public float SimpleAttackKnockback;

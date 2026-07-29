@@ -8,8 +8,8 @@ namespace Game.Core.Level
         [SerializeField] private Transform _playerSpawnPoint;
         [SerializeField] private Transform _enemySpawnPoint;
         
-        public Transform PlayerSpawnPoint => _playerSpawnPoint;
-        public Transform EnemySpawnPoint  => _enemySpawnPoint;
+        public Transform GetCharacterSpawnPosition(bool isPlayer)
+            => isPlayer ? _playerSpawnPoint : _enemySpawnPoint;
 
         public void Hide() => gameObject.SetActive(false);
         public void Show() => gameObject.SetActive(true);

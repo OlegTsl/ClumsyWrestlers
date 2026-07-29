@@ -1,12 +1,15 @@
 using System;
 using Game.Core.Character;
-using Game.Core.Events;
-using Game.Core.Movement;
 using UnityEngine;
 
 namespace Game.Core.Combat
 {
-    public class DamageController : IDamageController, IDisposable
+    public class DamageController
+    {
+        
+    }
+
+    /*public class DamageController : IDamageController, IDisposable
     {
         private readonly AttackSettings      _settings;
         private readonly Transform           _transform;
@@ -46,5 +49,5 @@ namespace Game.Core.Combat
 
         public void Dispose()
             => _gameEventsBus.Unsubscribe<OnHitLandedEvent>(ApplyDamage);
-    }
+    }*/
 }

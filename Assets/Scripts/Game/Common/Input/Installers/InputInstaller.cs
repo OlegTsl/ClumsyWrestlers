@@ -6,6 +6,8 @@ namespace Game.Common.Input
     {
         public override void InstallBindings()
         {
+            Container.Bind<InputEventsBus>().AsSingle();
+
             Container.Bind<IInputSource>()
                 .To<KeyboardSource>()
                 .AsSingle()
@@ -15,6 +17,8 @@ namespace Game.Common.Input
                 .To<MouseSource>()
                 .AsSingle()
                 .WithArguments(1);
+
+            Container.BindInterfacesAndSelfTo<InputController>().AsSingle().NonLazy();
         }
     }
 }

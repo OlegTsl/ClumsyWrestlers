@@ -22,10 +22,11 @@ MonoBehaviour:
     JumpImpulse: 7
     AirborneGravityMultiplier: 2
     AirControlFactor: 0.3
-  _attackSettings:
-    SimpleAttackDamage: 0
-    SimpleAttackKnockback: 10
-    SimpleAttackDuration: 1.1
-    SimpleAttackHitStop: 0
-    SimpleAttackHitboxStart: 0.1
-    SimpleAttackHitboxEnd: 0.55
+    FallingDelay: 1
+  _combatSettings:
+    SimpleAttackKnockback: 0
+    SimpleAttackDuration: 0
+    SimpleAttackHitboxStart: 0
+    SimpleAttackHitboxEnd: 0
+    PoweredAttackKnockback: 0
+    PoweredAttackDuration: 0

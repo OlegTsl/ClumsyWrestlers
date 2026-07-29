@@ -1,52 +1,52 @@
 using System;
 using System.Collections.Generic;
-using Game.Common.Input;
-using Game.Core.Events;
+using UnityEngine;
 
 namespace Game.Core.Character
 {
     public sealed class CharacterContext : ICharacterContext
     {
-        private readonly Dictionary<Type, object> _systems = new();
- 
-        public ICharacterView  View        { get; }
-        public Guid            CharacterId { get; }
-        public InputEventsBus  InputEvents { get; }
-        public GameEventsBus   GameEvents  { get; }
- 
-        public CharacterContext(
-            ICharacterView view,
-            Guid           characterId,
-            InputEventsBus inputEvents,
-            GameEventsBus  gameEvents)
-        {
-            View        = view;
-            CharacterId = characterId;
-            InputEvents = inputEvents;
-            GameEvents  = gameEvents;
-        }
- 
-        public void AddSystem<T>(T system) where T : class
-            => _systems[typeof(T)] = system;
+        private readonly Dictionary<Guid, ICharacter>     _characters     = new();
+        private readonly Dictionary<Collider, ICharacter> _colliders      = new();
+        private readonly List<ICharacter>                 _charactersList = new();
 
-        public T GetSystem<T>() where T : class
+        public IReadOnlyList<ICharacter> AllCharacters
+            => _charactersList;
+
+        public event Action<Guid> OnCharacterAdded;
+        public event Action<Guid> OnCharacterRemoved;
+
+        public void AddCharacter(ICharacter character)
         {
-            if (_systems.TryGetValue(typeof(T), out var system))
-                return (T)system;
- 
-            throw new InvalidOperationException($"System {typeof(T).Name} not found! ");
+            _characters[character.CharacterID] = character;
+            _colliders[character.Hitbox]       = character;
+            _charactersList.Add(character);
+
+            OnCharacterAdded?.Invoke(character.CharacterID);
         }
-  
-        public bool TryGetSystem<T>(out T system) where T : class
+
+        public void RemoveCharacter(Guid characterID)
         {
-            if (_systems.TryGetValue(typeof(T), out var raw))
+            if (_characters.TryGetValue(characterID, out var character))
             {
-                system = (T)raw;
-                return true;
+                _characters.Remove(characterID);
+                _colliders.Remove(character.Hitbox);
+                _charactersList.Remove(character);
+
+                OnCharacterRemoved?.Invoke(character.CharacterID);
             }
- 
-            system = null;
-            return false;
+        }
+
+        public ICharacter GetCharacter(Guid characterID)
+        {
+            _characters.TryGetValue(characterID, out var character);
+            return character;
+        }
+
+        public ICharacter GetCharacter(Collider collider)
+        {
+            _colliders.TryGetValue(collider, out var character);
+            return character;
         }
     }
 }

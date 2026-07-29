@@ -1,18 +1,18 @@
 using System;
-using Game.Common.Input;
-using Game.Core.Events;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Game.Core.Character
 {
     public interface ICharacterContext
-    {
-        ICharacterView  View        { get; }
-        Guid            CharacterId { get; }
-        InputEventsBus  InputEvents { get; }
-        GameEventsBus   GameEvents  { get; }
- 
-        void AddSystem<T>(T system) where T : class;
-        T    GetSystem<T>() where T : class;
-        bool TryGetSystem<T>(out T system) where T : class;
+    { 
+        void       AddCharacter(ICharacter character);
+        void       RemoveCharacter(Guid characterID);
+        ICharacter GetCharacter(Guid characterID);
+        ICharacter GetCharacter(Collider collider);
+
+        IReadOnlyList<ICharacter> AllCharacters { get; }
+        event Action<Guid> OnCharacterAdded;
+        event Action<Guid> OnCharacterRemoved;
     }
 }

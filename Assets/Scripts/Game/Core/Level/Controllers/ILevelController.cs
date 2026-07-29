@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Game.Core.Character;
 
 namespace Game.Core.Level
 {
@@ -6,9 +7,8 @@ namespace Game.Core.Level
     {
         UniTask LoadLevel(string address);
         void UnloadLevel();
-
         bool IsLevelLoaded();
 
-        UniTask SpawnCharacter(string name, bool isPlayer);
+        void SpawnCharacter(ICharacter character, bool isPlayer);
     }
 }

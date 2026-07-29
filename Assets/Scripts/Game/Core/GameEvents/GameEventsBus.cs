@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Game.Core.Events
+namespace Game.Core.GameEvents
 {
     public class GameEventsBus
     {

@@ -102,7 +102,7 @@ MonoBehaviour:
   _data: {fileID: 11400000, guid: 38effec1c771e432799f0f51d4bde95c, type: 2}
   _rigidbody: {fileID: 4467332111100562444}
   _animator: {fileID: 838435628740739442}
-  _bodyCollider: {fileID: 5141807331151570089}
+  _hitbox: {fileID: 5141807331151570089}
   _characterCamera: {fileID: 3682184032183625738}
   _leftArmCollider: {fileID: 8224884988394157300}
   _rightArmCollider: {fileID: 842784024305626095}
@@ -313,7 +313,7 @@ GameObject:
   - component: {fileID: 6287329574158017501}
   - component: {fileID: 5141807331151570089}
   m_Layer: 7
-  m_Name: HitBox
+  m_Name: Hitbox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -354,9 +354,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.28
-  m_Height: 2
+  m_Height: 1.9
   m_Direction: 1
-  m_Center: {x: 0, y: 0.9, z: 0}
+  m_Center: {x: 0, y: 0.95, z: 0}
 --- !u!1 &5481894819211484778
 GameObject:
   m_ObjectHideFlags: 0

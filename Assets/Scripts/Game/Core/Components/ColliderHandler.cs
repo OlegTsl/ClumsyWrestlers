@@ -5,7 +5,7 @@ namespace Game.Core.Components
 {
     public class ColliderHandler : MonoBehaviour
     {
-        private IHitController _hitController;
+        /*private IHitController _hitController;
 
         public void Initialize(IHitController hitController)
         {
@@ -13,6 +13,6 @@ namespace Game.Core.Components
         }
 
         private void OnTriggerEnter(Collider other)
-            => _hitController.OnTriggerEnter(other);
+            => _hitController.OnTriggerEnter(other);*/
     }
 }
