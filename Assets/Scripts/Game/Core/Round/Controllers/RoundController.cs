@@ -1,24 +1,27 @@
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
 using Game.Common.Input;
 using Game.Core.Character;
 using Game.Core.GameEvents;
 using Game.Core.Level;
+using Zenject;
 
 namespace Game.Core.Round
 {
-    public class RoundController : IRoundController
+    public class RoundController : IRoundController, ILateTickable
     {
+        private readonly ICharacterContext _context;
         private readonly ILevelController  _levelController;
         private readonly ICharacterBuilder _characterBuilder;
         private readonly IAssetManager     _assetManager;
         private readonly GameEventsBus     _gameEventsBus;
         private readonly InputEventsBus    _inputEventsBus;
-        
-        private List<ICharacterController> _characterControllers = new(); 
 
+        private ICharacterController _characterController;
+        private IBotController       _botController;
+        
         public RoundController(
+            ICharacterContext context,
             ILevelController  levelController,
             ICharacterBuilder characterBuilder,
             IAssetManager     assetManager,
@@ -26,6 +29,7 @@ namespace Game.Core.Round
             InputEventsBus    inputEventsBus
         )
         {
+            _context          = context;
             _levelController  = levelController;
             _characterBuilder = characterBuilder;
             _assetManager     = assetManager;
@@ -50,16 +54,21 @@ namespace Game.Core.Round
                     new MouseSource   (priority: 1)
                 };
 
-                _characterControllers.Add(new CharacterController(
-                    player, inputSources, _inputEventsBus, _gameEventsBus));
+                if (_characterController != null)
+                    _characterController.Dispose();
+
+                _characterController = new CharacterController(
+                    _context, player, inputSources, _inputEventsBus, _gameEventsBus);
+                
                 _levelController.SpawnCharacter(player, true);
             }
 
             if (enemy != null)
             {
-                var inputSources = new IInputSource[] { };
-                _characterControllers.Add(new CharacterController(
-                    enemy, inputSources, _inputEventsBus, _gameEventsBus));
+                if (_botController != null)
+                    _botController.Dispose();
+
+                _botController = new BotController(enemy);
                 _levelController.SpawnCharacter(enemy, false);
             }
         }
@@ -78,11 +87,23 @@ namespace Game.Core.Round
             UnloadLevel();
             UnloadCharacter("Wrestler");
 
-            foreach (var controller in _characterControllers)
+            if (_characterController != null)
             {
-                controller.Dispose();
+                _characterController.Dispose();
+                _characterController = null;
             }
-            _characterControllers.Clear();
+
+            if (_botController != null)
+            {
+                _botController.Dispose();
+                _botController = null;
+            }
+        }
+
+        public void LateTick()
+        {
+            if (_characterController != null)
+                _characterController.LateTick();
         }
     }
 }

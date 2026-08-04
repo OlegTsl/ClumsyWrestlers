@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using Game.Common.Views;
-using Game.Core.Components;
 using UnityEngine;
 
 namespace Game.Core.Character
@@ -13,11 +13,11 @@ namespace Game.Core.Character
         Collider                RightArmCollider { get; }
         Collider                LeftLegCollider  { get; }
         Collider                RightLegCollider { get; }
-        Camera                  CharacterCamera  { get; }
-        ColliderHandler         ColliderHandler  { get; }
         IReadOnlyList<Collider> AttackColliders  { get; }
+        Transform               Transform        { get; }
+        Transform               CameraTransform  { get; }
 
-        void SetAsPlayer(bool isPlayer);
+        void SetCameraEnabled(bool enabled);
         void SetVelocity(Vector3 velocity);
         void SetPosition(Vector3 position);
         void SetRotation(Quaternion rotation);
@@ -32,5 +32,7 @@ namespace Game.Core.Character
         Vector3 TransformDirection(Vector3 direction);
         Vector3 InverseTransformDirection(Vector3 direction);
         Vector3 GetVelocity();
+
+        event Action<Collider> OnHitTrigger;
     }
 }

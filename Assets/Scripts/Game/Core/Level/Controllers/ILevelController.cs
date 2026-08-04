@@ -9,6 +9,6 @@ namespace Game.Core.Level
         void UnloadLevel();
         bool IsLevelLoaded();
 
-        void SpawnCharacter(ICharacter character, bool isPlayer);
+        void SpawnCharacter(ICharacterModel model, bool isPlayer);
     }
 }

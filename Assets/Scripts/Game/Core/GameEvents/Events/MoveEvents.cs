@@ -5,8 +5,8 @@ namespace Game.Core.GameEvents
 {
     public readonly struct OnMoveEvent : ICharacterEvent
     {
-        public Guid    CharacterID { get; }
-        public Vector3 Direction   { get; }
+        public readonly Guid    CharacterID { get; }
+        public readonly Vector3 Direction   { get; }
 
         public OnMoveEvent(Guid characterID, Vector3 direction)
         {
@@ -17,8 +17,19 @@ namespace Game.Core.GameEvents
 
     public readonly struct OnJumpEvent : ICharacterEvent
     {
-        public Guid CharacterID { get; }
+        public readonly Guid CharacterID { get; }
         public OnJumpEvent(Guid characterID)
             => CharacterID = characterID;
+    }
+
+    public readonly struct OnForceEvent : ICharacterEvent
+    {
+        public readonly Guid    CharacterID { get; }
+        public readonly Vector3 Force       { get; }
+        public OnForceEvent(Guid characterID, Vector3 force)
+        {
+            CharacterID = characterID;
+            Force       = force;
+        }
     }
 }

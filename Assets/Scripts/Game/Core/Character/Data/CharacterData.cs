@@ -15,7 +15,7 @@ namespace Game.Core.Character
 
         [Header("Combat")]
         [SerializeField] private CombatSettings _combatSettings;
-        public CombatSettings CombatSettings => _combatSettings;
+        public CombatSettings Combat => _combatSettings;
         
         public string CharacterName => _characterName;
         public float  CharacterMass => _characterMass;

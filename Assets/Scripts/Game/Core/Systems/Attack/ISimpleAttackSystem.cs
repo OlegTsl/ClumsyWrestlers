@@ -2,7 +2,7 @@ using System;
 
 namespace Game.Core.Systems
 {
-    public interface IHitDetectionSystem : IDisposable
+    public interface ISimpleAttackSystem : IDisposable
     {
     }
 }

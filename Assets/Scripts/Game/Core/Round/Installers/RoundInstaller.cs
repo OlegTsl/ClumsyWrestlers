@@ -6,7 +6,7 @@ namespace Game.Core.Round
     {
         public override void InstallBindings()
         {
-            Container.Bind<IRoundController>().To<RoundController>().AsSingle();
+            Container.BindInterfacesAndSelfTo<RoundController>().AsSingle().NonLazy();
         }
     }
 }

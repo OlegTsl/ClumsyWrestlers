@@ -40,7 +40,7 @@ namespace Game.Core.Systems
 
         private void OnJump(OnJumpEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -49,7 +49,7 @@ namespace Game.Core.Systems
 
         private void OnFall(OnFallEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -58,7 +58,7 @@ namespace Game.Core.Systems
 
         private void OnMove(OnMoveEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -68,7 +68,7 @@ namespace Game.Core.Systems
 
         private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -77,7 +77,7 @@ namespace Game.Core.Systems
 
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -97,9 +97,9 @@ namespace Game.Core.Systems
             }
         }
 
-        private void UpdateMovementAnimation(ICharacter character)
+        private void UpdateMovementAnimation(ICharacterModel model)
         {
-            var velocity = character.GetVelocity();
+            var velocity = model.GetVelocity();
 
             Vector3 worldVelocity = velocity;
             worldVelocity.y       = 0;
@@ -116,7 +116,7 @@ namespace Game.Core.Systems
             
             if (speed > 0f)
             {
-                Vector3 localVelocity = character.InverseTransformDirection(worldVelocity.normalized);
+                Vector3 localVelocity = model.InverseTransformDirection(worldVelocity.normalized);
                 float absX = Mathf.Abs(localVelocity.x);
 
                 if (absX > 0.3f)
@@ -131,10 +131,10 @@ namespace Game.Core.Systems
                 }
             }
 
-            character.SetAnimatorFloat(AnimationData.MoveX, moveX, 0.05f, Time.deltaTime);
-            character.SetAnimatorFloat(AnimationData.MoveY, moveY, 0.05f, Time.deltaTime);
-            character.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
-            character.SetAnimatorBool(AnimationData.Grounded, character.IsGrounded());
+            model.SetAnimatorFloat(AnimationData.MoveX, moveX, 0.05f, Time.deltaTime);
+            model.SetAnimatorFloat(AnimationData.MoveY, moveY, 0.05f, Time.deltaTime);
+            model.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
+            model.SetAnimatorBool(AnimationData.Grounded, model.IsGrounded());
         }
 
         public void Dispose()

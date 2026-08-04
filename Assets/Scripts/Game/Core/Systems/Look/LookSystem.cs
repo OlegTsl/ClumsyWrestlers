@@ -1,10 +1,9 @@
 using Game.Common.Input;
 using UnityEngine;
-using Zenject;
 
 namespace Game.Core.Systems
 {
-    public class LookSystem : ILookSystem, ILateTickable
+    public class LookSystem : ILookSystem
     {
         private readonly InputEventsBus _inputEventsBus;
         

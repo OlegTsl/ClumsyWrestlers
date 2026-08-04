@@ -4,6 +4,6 @@ namespace Game.Core.Character
 {
     public interface ICharacterBuilder
     {
-        UniTask<ICharacter> BuidCharacter(string name);
+        UniTask<ICharacterModel> BuidCharacter(string name);
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Game.Core.Components;
 using UnityEngine;
 
 namespace Game.Core.Character
@@ -11,12 +10,11 @@ namespace Game.Core.Character
         [SerializeField] private Rigidbody       _rigidbody;
         [SerializeField] private Animator        _animator;
         [SerializeField] private Collider        _hitbox;
-        [SerializeField] private Camera          _characterCamera;
+        [SerializeField] private Camera          _camera;
         [SerializeField] private Collider        _leftArmCollider;
         [SerializeField] private Collider        _rightArmCollider;
         [SerializeField] private Collider        _leftLegCollider;
         [SerializeField] private Collider        _rightLegCollider;
-        [SerializeField] private ColliderHandler _colliderHandler;
 
         private IReadOnlyList<Collider> _attackColliders;
         
@@ -26,9 +24,11 @@ namespace Game.Core.Character
         public Collider                RightArmCollider => _rightArmCollider;
         public Collider                LeftLegCollider  => _leftLegCollider;
         public Collider                RightLegCollider => _rightLegCollider;
-        public Camera                  CharacterCamera  => _characterCamera;
-        public ColliderHandler         ColliderHandler  => _colliderHandler;
         public IReadOnlyList<Collider> AttackColliders  => _attackColliders;
+        public Transform               Transform        => transform;
+        public Transform               CameraTransform  => _camera.transform;
+
+        public event Action<Collider> OnHitTrigger;
 
         private void Awake()
         {
@@ -49,8 +49,8 @@ namespace Game.Core.Character
 
         public Action DisposeAction { get; set; }
 
-        public void SetAsPlayer(bool isPlayer)
-            => _characterCamera.enabled = isPlayer;
+        public void SetCameraEnabled(bool isPlayer)
+            => _camera.enabled = isPlayer;
 
         public void SetPosition(Vector3 position)
             => transform.position = position;
@@ -84,5 +84,8 @@ namespace Game.Core.Character
 
         public Vector3 GetVelocity()
             => _rigidbody.velocity;
+
+        private void OnTriggerEnter(Collider other)
+            => OnHitTrigger?.Invoke(other);
     }
 }

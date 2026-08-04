@@ -23,6 +23,7 @@ namespace Game.Core.Systems
             
             _gameEventsBus.Subscribe<OnMoveEvent>(OnMove);
             _gameEventsBus.Subscribe<OnJumpEvent>(OnJump);
+            _gameEventsBus.Subscribe<OnForceEvent>(OnForce);
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
@@ -36,8 +37,8 @@ namespace Game.Core.Systems
 
         private void OnMove(OnMoveEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
-            if (character == null || !character.Enabled)
+            var model = _context.GetModel(evt.CharacterID);
+            if (model == null || !model.Enabled)
                 return;
 
             if (_states.TryGetValue(evt.CharacterID, out var state))
@@ -46,12 +47,12 @@ namespace Game.Core.Systems
 
         private void OnJump(OnJumpEvent evt)
         {
-            var character = _context.GetCharacter(evt.CharacterID);
-            if (character == null || !character.Enabled)
+            var model = _context.GetModel(evt.CharacterID);
+            if (model == null || !model.Enabled)
                 return;
 
             if (_states.TryGetValue(evt.CharacterID, out var state))
-                state.JumpRequested = character.IsGrounded();
+                state.JumpRequested = model.IsGrounded();
         }
 
         public void FixedTick()
@@ -82,12 +83,12 @@ namespace Game.Core.Systems
         }
 
         private void TrackAirTime(
-            ICharacter       character,
+            ICharacterModel  model,
             MovementState    state,
             MovementSettings settings
         )
         {
-            if (character.IsGrounded())
+            if (model.IsGrounded())
             {
                 state.AirTime   = 0f;
                 state.IsFalling = false;
@@ -99,17 +100,17 @@ namespace Game.Core.Systems
             if (!state.IsFalling && state.AirTime >= settings.FallingDelay)
             {
                 state.IsFalling = true;
-                _gameEventsBus.Publish(new OnFallEvent(character.CharacterID));
+                _gameEventsBus.Publish(new OnFallEvent(model.CharacterID));
             }
         }
 
         private void ApplyGravity(
-            ICharacter       character,
+            ICharacterModel  model,
             MovementState    state,
             MovementSettings settings
         )
         {
-            bool isGrounded = character.IsGrounded();
+            bool isGrounded = model.IsGrounded();
 
             if (isGrounded && state.VerticalVelocity <= 0)
             {
@@ -123,24 +124,24 @@ namespace Game.Core.Systems
         }
 
         private void UpdateHorizontalMovement(
-            ICharacter       character,
+            ICharacterModel  model,
             MovementState    state,
             MovementSettings settings
         )
         {
-            if (character.IsGrounded())
-                UpdateGroundMovement(character, state, settings);
+            if (model.IsGrounded())
+                UpdateGroundMovement(model, state, settings);
             else
-                UpdateAirMovement(character, state, settings);
+                UpdateAirMovement(model, state, settings);
         }
 
         private void UpdateGroundMovement(
-            ICharacter       character,
+            ICharacterModel  model,
             MovementState    state,
             MovementSettings settings
         )
         {
-            Vector3 worldDirection = character.TransformDirection(state.MoveDirection);
+            Vector3 worldDirection = model.TransformDirection(state.MoveDirection);
             
             float currentSpeed = state.HorizontalVelocity.magnitude;
             float targetSpeed  = worldDirection.magnitude > 0.01f ? settings.RunSpeed : 0f;
@@ -165,12 +166,12 @@ namespace Game.Core.Systems
         }
 
         private void UpdateAirMovement(
-            ICharacter       character,
+            ICharacterModel  model,
             MovementState    state,
             MovementSettings settings
         )
         {
-            Vector3 worldDirection = character.TransformDirection(state.MoveDirection);
+            Vector3 worldDirection = model.TransformDirection(state.MoveDirection);
 
             if (worldDirection.magnitude > 0.01f)
             {
@@ -213,20 +214,20 @@ namespace Game.Core.Systems
             state.JumpRequested    = false;
         }
 
-        private void ApplyFinalVelocity(MovementState state, ICharacter character)
+        private void ApplyFinalVelocity(MovementState state, ICharacterModel model)
         {
-            character.ApplyVelocity(new Vector3(
+            model.ApplyVelocity(new Vector3(
                 state.HorizontalVelocity.x,
                 state.VerticalVelocity,
                 state.HorizontalVelocity.z));
         }
 
-        private void ApplyExternalForce(Guid id, Vector3 force)
+        private void OnForce(OnForceEvent evt)
         {
-            if (_states.TryGetValue(id, out var state))
+            if (_states.TryGetValue(evt.CharacterID, out var state))
             {
-                state.HorizontalVelocity += new Vector3(force.x, 0, force.z);
-                state.VerticalVelocity   += force.y;
+                state.HorizontalVelocity += new Vector3(evt.Force.x, 0, evt.Force.z);
+                state.VerticalVelocity   += evt.Force.y;
             }
         }
 
@@ -234,6 +235,7 @@ namespace Game.Core.Systems
         {
             _gameEventsBus.Unsubscribe<OnMoveEvent>(OnMove);
             _gameEventsBus.Unsubscribe<OnJumpEvent>(OnJump);
+            _gameEventsBus.Unsubscribe<OnForceEvent>(OnForce);
 
             _context.OnCharacterAdded   -= Register;
             _context.OnCharacterRemoved -= Unregister;

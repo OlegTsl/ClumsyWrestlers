@@ -6,12 +6,12 @@ namespace Game.Core.Character
 {
     public interface ICharacterContext
     { 
-        void       AddCharacter(ICharacter character);
-        void       RemoveCharacter(Guid characterID);
-        ICharacter GetCharacter(Guid characterID);
-        ICharacter GetCharacter(Collider collider);
+        void            AddCharacter(ICharacterModel character);
+        void            RemoveCharacter(Guid characterID);
+        ICharacterModel GetModel(Guid characterID);
+        ICharacterModel GetModel(Collider collider);
 
-        IReadOnlyList<ICharacter> AllCharacters { get; }
+        IReadOnlyList<ICharacterModel> AllCharacters { get; }
         event Action<Guid> OnCharacterAdded;
         event Action<Guid> OnCharacterRemoved;
     }

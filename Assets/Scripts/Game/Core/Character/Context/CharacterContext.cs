@@ -6,17 +6,17 @@ namespace Game.Core.Character
 {
     public sealed class CharacterContext : ICharacterContext
     {
-        private readonly Dictionary<Guid, ICharacter>     _characters     = new();
-        private readonly Dictionary<Collider, ICharacter> _colliders      = new();
-        private readonly List<ICharacter>                 _charactersList = new();
+        private readonly Dictionary<Guid, ICharacterModel>     _characters     = new();
+        private readonly Dictionary<Collider, ICharacterModel> _colliders      = new();
+        private readonly List<ICharacterModel>                 _charactersList = new();
 
-        public IReadOnlyList<ICharacter> AllCharacters
+        public IReadOnlyList<ICharacterModel> AllCharacters
             => _charactersList;
 
         public event Action<Guid> OnCharacterAdded;
         public event Action<Guid> OnCharacterRemoved;
 
-        public void AddCharacter(ICharacter character)
+        public void AddCharacter(ICharacterModel character)
         {
             _characters[character.CharacterID] = character;
             _colliders[character.Hitbox]       = character;
@@ -37,16 +37,16 @@ namespace Game.Core.Character
             }
         }
 
-        public ICharacter GetCharacter(Guid characterID)
+        public ICharacterModel GetModel(Guid characterID)
         {
-            _characters.TryGetValue(characterID, out var character);
-            return character;
+            _characters.TryGetValue(characterID, out var model);
+            return model;
         }
 
-        public ICharacter GetCharacter(Collider collider)
+        public ICharacterModel GetModel(Collider collider)
         {
-            _colliders.TryGetValue(collider, out var character);
-            return character;
+            _colliders.TryGetValue(collider, out var model);
+            return model;
         }
     }
 }

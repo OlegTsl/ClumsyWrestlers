@@ -52,7 +52,7 @@ namespace Game.Core.Level
             => _level != null;
 
 
-        public void SpawnCharacter(ICharacter character, bool isPlayer)
+        public void SpawnCharacter(ICharacterModel model, bool isPlayer)
         {
             if (!IsLevelLoaded())
             {
@@ -61,9 +61,9 @@ namespace Game.Core.Level
             }
 
             var spawnPoint = _level.GetCharacterSpawnPosition(isPlayer);
-            character.SetPosition(spawnPoint.position);
-            character.SetRotation(spawnPoint.rotation);
-            character.SetEnabled(true);
+            model.SetPosition(spawnPoint.position);
+            model.SetRotation(spawnPoint.rotation);
+            model.SetEnabled(true);
         }
     }
 }

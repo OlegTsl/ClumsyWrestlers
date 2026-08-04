@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 838435628740739442}
   - component: {fileID: 4467332111100562444}
   - component: {fileID: 3729692977054113036}
-  - component: {fileID: 5189628299572902810}
   m_Layer: 7
   m_Name: Wrestler
   m_TagString: Untagged
@@ -103,24 +102,11 @@ MonoBehaviour:
   _rigidbody: {fileID: 4467332111100562444}
   _animator: {fileID: 838435628740739442}
   _hitbox: {fileID: 5141807331151570089}
-  _characterCamera: {fileID: 3682184032183625738}
+  _camera: {fileID: 3682184032183625738}
   _leftArmCollider: {fileID: 8224884988394157300}
   _rightArmCollider: {fileID: 842784024305626095}
   _leftLegCollider: {fileID: 6891717289700732416}
   _rightLegCollider: {fileID: 2337139984353932658}
-  _colliderHandler: {fileID: 5189628299572902810}
---- !u!114 &5189628299572902810
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2502001638886308846}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4bba844b8a4542af8358af636254266, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &3383617456614910645
 GameObject:
   m_ObjectHideFlags: 0
