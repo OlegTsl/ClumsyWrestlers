@@ -14,6 +14,9 @@ namespace Game.Core.Character
         private readonly InputEventsBus    _inputEventsBus;
         private readonly GameEventsBus     _gameEventsBus;
         private readonly ILookSystem       _lookSystem;
+        private readonly IAimSystem        _aimSystem;
+
+        private bool _isAiming;
 
         public CharacterController(
             ICharacterContext         context,
@@ -38,8 +41,10 @@ namespace Game.Core.Character
             _inputController = new InputController(
                 inputSources, inputEventsBus);
 
-            _lookSystem = new LookSystem(inputEventsBus,
-                model.Transform, model.CameraTransform);
+            _lookSystem = new LookSystem(
+                model.Transform, Camera.main.transform);
+
+            _aimSystem = new AimSystem(model);
         }
 
         private void OnHit(Collider other)
@@ -49,7 +54,7 @@ namespace Game.Core.Character
                 return;
 
             _gameEventsBus.Publish(new OnDamageEvent(
-                _model.CharacterID, target.CharacterID
+                _model.CharacterID, target.CharacterID, target.Data.Combat.SimpleAttackForce
             ));
         }
 
@@ -73,20 +78,34 @@ namespace Game.Core.Character
 
         private void HandleSimpleAttack(SimpleAttackAction action)
         {
-            _gameEventsBus.Publish(new OnSimpleAttackEvent(
-                _model.CharacterID
+            _gameEventsBus.Publish(new OnAttackEvent(
+                _model.CharacterID, AttackType.Simple
             ));
         }
 
         private void HandlePowerAttack(PowerAttackAction action)
         {
-            _gameEventsBus.Publish(new OnPowerAttackEvent(
-                _model.CharacterID
-            ));
+            if (action.EventType == InputEventType.Pressed)
+            {
+                _isAiming = true;
+            }
+            else if (action.EventType == InputEventType.Released)
+            {
+                _isAiming = false;
+
+                _gameEventsBus.Publish(new OnAttackEvent(
+                    _model.CharacterID, AttackType.Power
+                ));
+            }
+
+            _model.SetAimEnabled(_isAiming);
         }
 
         public void LateTick()
         {
+            if (_isAiming)
+                _aimSystem.Update();
+
             _lookSystem.LateTick();
         }
 
@@ -97,7 +116,6 @@ namespace Game.Core.Character
             _inputEventsBus.Unsubscribe<SimpleAttackAction>(HandleSimpleAttack);
             _inputEventsBus.Unsubscribe<PowerAttackAction>(HandlePowerAttack);
 
-            _lookSystem.Dispose();
             _model.OnHitTrigger -= OnHit;
         }
     }

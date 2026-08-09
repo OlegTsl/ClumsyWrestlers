@@ -9,7 +9,6 @@ namespace Game.Core.Character
         )
         {
             _model = model;
-            _model.SetCameraEnabled(false);
         }
 
         public void Dispose()

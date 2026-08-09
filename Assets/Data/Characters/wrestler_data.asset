@@ -22,11 +22,15 @@ MonoBehaviour:
     JumpImpulse: 7
     AirborneGravityMultiplier: 2
     AirControlFactor: 0.3
-    FallingDelay: 1
+    FallingDelay: 2.5
   _combatSettings:
-    SimpleAttackKnockback: 10
+    SimpleAttackForce: 10
     SimpleAttackDuration: 1.1
     SimpleAttackHitboxStart: 0.3
     SimpleAttackHitboxEnd: 0.4
-    PoweredAttackKnockback: 0
-    PoweredAttackDuration: 0.1
+    PowerAttackForce: 20
+    PowerAttackDuration: 1.85
+    PowerAttackDistance: 6
+    PowerAttackJumpHeight: 1.5
+    PowerWaveRadius: 20
+    PowerWaveHeight: 5

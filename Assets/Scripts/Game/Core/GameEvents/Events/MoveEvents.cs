@@ -24,12 +24,14 @@ namespace Game.Core.GameEvents
 
     public readonly struct OnForceEvent : ICharacterEvent
     {
-        public readonly Guid    CharacterID { get; }
-        public readonly Vector3 Force       { get; }
-        public OnForceEvent(Guid characterID, Vector3 force)
+        public readonly Guid    CharacterID  { get; }
+        public readonly Vector3 Force        { get; }
+        public readonly bool    Controllable { get; }
+        public OnForceEvent(Guid characterID, Vector3 force, bool controllable)
         {
-            CharacterID = characterID;
-            Force       = force;
+            CharacterID  = characterID;
+            Force        = force;
+            Controllable = controllable;
         }
     }
 }

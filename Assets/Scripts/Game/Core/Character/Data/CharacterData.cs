@@ -29,6 +29,7 @@ namespace Game.Core.Character
         [Range(0f,  10f)] public float WalkSpeed;
         [Range(0f, 100f)] public float Acceleration;
         [Range(0f, 100f)] public float Deceleration;
+        [Range(0f, 900f)] public float RotationSpeed;
         
         [Header("Jump")]
         [Range(0f, 20f)] public float JumpImpulse;
@@ -43,13 +44,20 @@ namespace Game.Core.Character
     public struct CombatSettings
     {
         [Header("Simple Attack")]
-        [Range(0f,  50f)] public float SimpleAttackKnockback;
+        [Range(0f,  50f)] public float SimpleAttackForce;
         [Range(0.1f, 2f)] public float SimpleAttackDuration;
         [Range(0f,   2f)] public float SimpleAttackHitboxStart;
         [Range(0f,   2f)] public float SimpleAttackHitboxEnd;
 
         [Header("Powered Attack")]
-        [Range(0f,  50f)] public float PoweredAttackKnockback;
-        [Range(0.1f, 5f)] public float PoweredAttackDuration;
+        [Range(0f,  50f)] public float PowerAttackForce;
+        [Range(0.1f, 5f)] public float PowerAttackDuration;
+        [Range(0f,  50f)] public float PowerAttackDistance;
+        [Range(0f,  50f)] public float PowerAttackJumpHeight;
+        [Range(0f,   2f)] public float PowerAttackWaveStart;
+
+        [Header("Power Wave")]
+        [Range(0f,  20f)] public float PowerWaveRadius;
+        [Range(0f,   5f)] public float PowerWaveHeight;
     }
 }

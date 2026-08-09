@@ -1,6 +1,6 @@
 namespace Game.Core.Systems
 {
-    public interface IDamageSystem
+    public interface IApplyDamageSystem
     {
     }
 }

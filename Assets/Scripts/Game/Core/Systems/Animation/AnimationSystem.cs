@@ -25,8 +25,7 @@ namespace Game.Core.Systems
             _events.Subscribe<OnJumpEvent>(OnJump);
             _events.Subscribe<OnFallEvent>(OnFall);
             _events.Subscribe<OnMoveEvent>(OnMove);
-            _events.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
-            _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Subscribe<OnAttackStartedEvent>(OnAttackStarted);
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
@@ -66,18 +65,33 @@ namespace Game.Core.Systems
                 evt.Direction != Vector3.zero);
         }
 
-        private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
+        private void OnAttackStarted(OnAttackStartedEvent evt)
         {
-            var character = _context.GetModel(evt.CharacterID);
+            switch (evt.Type)
+            {
+                case AttackType.Simple:
+                    OnSimpleAttackStarted(evt.CharacterID);
+                    break;
+                case AttackType.Power:
+                    OnPowerAttackStarted(evt.CharacterID);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void OnSimpleAttackStarted(Guid characterID)
+        {
+            var character = _context.GetModel(characterID);
             if (character == null || !character.Enabled)
                 return;
 
             character.SetAnimatorTrigger(AnimationData.PunchTrigger);
         }
 
-        private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
+        private void OnPowerAttackStarted(Guid characterID)
         {
-            var character = _context.GetModel(evt.CharacterID);
+            var character = _context.GetModel(characterID);
             if (character == null || !character.Enabled)
                 return;
 
@@ -106,33 +120,8 @@ namespace Game.Core.Systems
             
             float speed = worldVelocity.magnitude;
             if (speed < 0.1f)
-            {
-                speed         = 0f;
-                worldVelocity = Vector3.zero;
-            }
+                speed = 0f;
             
-            float moveX = 0f;
-            float moveY = 0f;
-            
-            if (speed > 0f)
-            {
-                Vector3 localVelocity = model.InverseTransformDirection(worldVelocity.normalized);
-                float absX = Mathf.Abs(localVelocity.x);
-
-                if (absX > 0.3f)
-                {
-                    moveX = localVelocity.x > 0 ? 1f : -1f;
-                    moveY = 0f;
-                }
-                else
-                {
-                    moveY = localVelocity.z > 0 ? 1f : -1f;
-                    moveX = 0f;
-                }
-            }
-
-            model.SetAnimatorFloat(AnimationData.MoveX, moveX, 0.05f, Time.deltaTime);
-            model.SetAnimatorFloat(AnimationData.MoveY, moveY, 0.05f, Time.deltaTime);
             model.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
             model.SetAnimatorBool(AnimationData.Grounded, model.IsGrounded());
         }
@@ -142,8 +131,7 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnJumpEvent>(OnJump);
             _events.Unsubscribe<OnFallEvent>(OnFall);
             _events.Unsubscribe<OnMoveEvent>(OnMove);
-            _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
-            _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Unsubscribe<OnAttackStartedEvent>(OnAttackStarted);
         }
     }
 }

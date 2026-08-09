@@ -41,7 +41,7 @@ namespace Game.Core.Systems
             if (model == null || !model.Enabled)
                 return;
 
-            if (_states.TryGetValue(evt.CharacterID, out var state))
+            if (_states.TryGetValue(evt.CharacterID, out var state) && state.IsControllable)
                 state.MoveDirection = evt.Direction;
         }
 
@@ -70,13 +70,14 @@ namespace Game.Core.Systems
 
                 var settings = character.Data.Movement;
 
-                TrackAirTime(character, state, settings);
-                ApplyGravity(character, state, settings);
-
                 UpdateHorizontalMovement(character, state, settings);
+                UpdateRotation(character, state);
 
                 if (state.JumpRequested)
                     ApplyJump(state, settings);
+
+                TrackAirTime(character, state, settings);
+                ApplyGravity(character, state, settings);
 
                 ApplyFinalVelocity(state, character);
             }
@@ -111,14 +112,15 @@ namespace Game.Core.Systems
         )
         {
             bool isGrounded = model.IsGrounded();
-
             if (isGrounded && state.VerticalVelocity <= 0)
             {
                 state.VerticalVelocity = -2f;
+                state.IsControllable   = true; 
             }
             else
             {
-                float gravity = Physics.gravity.y * settings.AirborneGravityMultiplier;
+                float multiplier = state.IsControllable ? settings.AirborneGravityMultiplier : 1f;
+                float gravity    = Physics.gravity.y * multiplier;
                 state.VerticalVelocity += gravity * Time.fixedDeltaTime;
             }
         }
@@ -129,19 +131,18 @@ namespace Game.Core.Systems
             MovementSettings settings
         )
         {
+            if (!state.IsControllable)
+                return;
+
             if (model.IsGrounded())
-                UpdateGroundMovement(model, state, settings);
+                UpdateGroundMovement(state, settings);
             else
-                UpdateAirMovement(model, state, settings);
+                UpdateAirMovement(state, settings);
         }
 
-        private void UpdateGroundMovement(
-            ICharacterModel  model,
-            MovementState    state,
-            MovementSettings settings
-        )
+        private void UpdateGroundMovement(MovementState state, MovementSettings settings)
         {
-            Vector3 worldDirection = model.TransformDirection(state.MoveDirection);
+            Vector3 worldDirection = state.MoveDirection;
             
             float currentSpeed = state.HorizontalVelocity.magnitude;
             float targetSpeed  = worldDirection.magnitude > 0.01f ? settings.RunSpeed : 0f;
@@ -165,13 +166,9 @@ namespace Game.Core.Systems
             state.AirVelocity = state.HorizontalVelocity;
         }
 
-        private void UpdateAirMovement(
-            ICharacterModel  model,
-            MovementState    state,
-            MovementSettings settings
-        )
+        private void UpdateAirMovement(MovementState state, MovementSettings settings)
         {
-            Vector3 worldDirection = model.TransformDirection(state.MoveDirection);
+            Vector3 worldDirection = state.MoveDirection;
 
             if (worldDirection.magnitude > 0.01f)
             {
@@ -204,6 +201,19 @@ namespace Game.Core.Systems
             state.HorizontalVelocity = state.AirVelocity;
         }
 
+        private void UpdateRotation(ICharacterModel model, MovementState state)
+        {
+            if (state.MoveDirection.magnitude > 0.01f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(state.MoveDirection);
+                model.SetRotation(Quaternion.RotateTowards(
+                    model.Rotation,
+                    targetRotation,
+                    model.Data.Movement.RotationSpeed * Time.fixedDeltaTime
+                ));
+            }
+        }
+
         private void ApplyJump(MovementState state, MovementSettings settings)
         {
             if (!state.JumpRequested)
@@ -226,8 +236,10 @@ namespace Game.Core.Systems
         {
             if (_states.TryGetValue(evt.CharacterID, out var state))
             {
-                state.HorizontalVelocity += new Vector3(evt.Force.x, 0, evt.Force.z);
-                state.VerticalVelocity   += evt.Force.y;
+                state.HorizontalVelocity = new Vector3(evt.Force.x, 0, evt.Force.z);
+                state.VerticalVelocity   = evt.Force.y;
+                state.AirVelocity        = state.HorizontalVelocity;
+                state.IsControllable     = evt.Controllable;
             }
         }
 

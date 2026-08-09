@@ -8,8 +8,9 @@ namespace Game.Core.Systems
         {
             Container.BindInterfacesAndSelfTo<MovementSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<AnimationSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<SimpleAttackSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<DamageSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<AttackSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CheckDamageSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<ApplyDamageSystem>().AsSingle();
         }
     }
 }

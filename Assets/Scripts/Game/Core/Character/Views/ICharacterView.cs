@@ -15,16 +15,18 @@ namespace Game.Core.Character
         Collider                RightLegCollider { get; }
         IReadOnlyList<Collider> AttackColliders  { get; }
         Transform               Transform        { get; }
-        Transform               CameraTransform  { get; }
+        LineRenderer            Aim              { get; }
 
-        void SetCameraEnabled(bool enabled);
         void SetVelocity(Vector3 velocity);
         void SetPosition(Vector3 position);
+        Vector3 GetPosition();
         void SetRotation(Quaternion rotation);
 
         void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
         void SetAnimatorBool(int id, bool value);
         void SetAnimatorTrigger(int id);
+        void SetAimPositions(Vector3[] positions);
+        void SetAimPositionCount(int count);
 
         bool IsGrounded();
         bool IsMoving();

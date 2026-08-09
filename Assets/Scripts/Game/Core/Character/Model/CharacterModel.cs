@@ -15,7 +15,10 @@ namespace Game.Core.Character
         public CharacterData Data            => _view.Data;
         public Collider      Hitbox          => _view.Hitbox;
         public Transform     Transform       => _view.Transform;
-        public Transform     CameraTransform => _view.CameraTransform;
+        public LineRenderer  Aim             => _view.Aim;
+        public Vector3       Forward         => _view.Transform.forward;
+        public Vector3       Position        => _view.Transform.position;
+        public Quaternion    Rotation        => _view.Transform.rotation;
         public bool          Enabled         => _enabled;
 
         public event Action<Collider> OnHitTrigger;
@@ -34,6 +37,9 @@ namespace Game.Core.Character
         public void SetPosition(Vector3 position)
             => _view.SetPosition(position);
 
+        public Vector3 GetPosition()
+            => _view.GetPosition();
+
         public void SetRotation(Quaternion rotation)
             => _view.SetRotation(rotation);
 
@@ -47,6 +53,9 @@ namespace Game.Core.Character
                 _view.Hide();
         }
 
+        public void SetAimEnabled(bool enabled)
+            => _view.Aim.gameObject.SetActive(enabled);
+
         public void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime)
             => _view.SetAnimatorFloat(id, value, dampTime, deltaTime);
 
@@ -55,6 +64,12 @@ namespace Game.Core.Character
 
         public void SetAnimatorTrigger(int id)
             => _view.SetAnimatorTrigger(id);
+
+        public void SetAimPositions(Vector3[] positions)
+            => _view.SetAimPositions(positions);
+
+        public void SetAimPositionCount(int count)
+            => _view.SetAimPositionCount(count);
 
         public bool IsGrounded()
             => _view.IsGrounded();
@@ -76,9 +91,6 @@ namespace Game.Core.Character
 
         public void SetHitsEnabled(bool enabled)
             => _hitsEnabled = enabled;
-
-        public void SetCameraEnabled(bool enabled)
-            => _view.SetCameraEnabled(enabled);
 
         private void OnHitTriggered(Collider other)
         {

@@ -1,8 +1,6 @@
-using System;
-
 namespace Game.Core.Systems
 {
-    public interface ILookSystem : IDisposable
+    public interface ILookSystem
     {
         void LateTick();
     }

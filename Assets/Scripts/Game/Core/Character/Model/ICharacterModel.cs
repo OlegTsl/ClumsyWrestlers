@@ -13,13 +13,18 @@ namespace Game.Core.Character
         void SetAnimatorTrigger(int id);
         void ApplyVelocity(Vector3 velocity);
         void SetHitsEnabled(bool enabled);
-        void SetCameraEnabled(bool enabled);
+        void SetAimEnabled(bool enabled);
+        void SetAimPositions(Vector3[] positions);
+        void SetAimPositionCount(int count);
 
         Guid          CharacterID     { get; }
         CharacterData Data            { get; }
         Collider      Hitbox          { get; }
         Transform     Transform       { get; }
-        Transform     CameraTransform { get; }
+        LineRenderer  Aim             { get; }
+        Vector3       Forward         { get; }
+        Vector3       Position        { get; }
+        Quaternion    Rotation        { get; }
         bool          Enabled         { get; }
 
         bool IsGrounded();
