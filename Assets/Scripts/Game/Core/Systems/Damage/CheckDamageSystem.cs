@@ -56,13 +56,13 @@ namespace Game.Core.Systems
                 evt.AttackerID, evt.TargetID, evt.Force));
         }
 
-        public void Register(Guid characterID)
+        private void Register(Guid characterID)
         {
             if (!_hitTargets.ContainsKey(characterID))
                 _hitTargets[characterID] = new List<Guid>();
         }
 
-        public void Unregister(Guid characterID)
+        private void Unregister(Guid characterID)
             => _hitTargets.Remove(characterID);
 
         public void Dispose()

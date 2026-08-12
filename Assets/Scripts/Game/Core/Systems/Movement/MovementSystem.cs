@@ -41,7 +41,7 @@ namespace Game.Core.Systems
             if (model == null || !model.Enabled)
                 return;
 
-            if (_states.TryGetValue(evt.CharacterID, out var state) && state.IsControllable)
+            if (_states.TryGetValue(evt.CharacterID, out var state) && model.IsMovable)
                 state.MoveDirection = evt.Direction;
         }
 
@@ -51,7 +51,7 @@ namespace Game.Core.Systems
             if (model == null || !model.Enabled)
                 return;
 
-            if (_states.TryGetValue(evt.CharacterID, out var state))
+            if (_states.TryGetValue(evt.CharacterID, out var state) && model.IsMovable)
                 state.JumpRequested = model.IsGrounded();
         }
 
@@ -68,6 +68,8 @@ namespace Game.Core.Systems
                 if (!_states.TryGetValue(character.CharacterID, out var state))
                     continue;
 
+                HandleMovementLock(character, state);
+
                 var settings = character.Data.Movement;
 
                 UpdateHorizontalMovement(character, state, settings);
@@ -80,6 +82,21 @@ namespace Game.Core.Systems
                 ApplyGravity(character, state, settings);
 
                 ApplyFinalVelocity(state, character);
+            }
+        }
+
+        private void HandleMovementLock(ICharacterModel model, MovementState state)
+        {
+            if (model.IsMovable)
+                return;
+
+            state.MoveDirection = Vector3.zero;
+            state.JumpRequested = false;
+
+            if (model.IsGrounded() && state.VerticalVelocity <= 0f)
+            {
+                state.HorizontalVelocity = Vector3.zero;
+                state.AirVelocity = Vector3.zero;
             }
         }
 
@@ -115,11 +132,10 @@ namespace Game.Core.Systems
             if (isGrounded && state.VerticalVelocity <= 0)
             {
                 state.VerticalVelocity = -2f;
-                state.IsControllable   = true; 
             }
             else
             {
-                float multiplier = state.IsControllable ? settings.AirborneGravityMultiplier : 1f;
+                float multiplier = model.IsMovable ? settings.AirborneGravityMultiplier : 1f;
                 float gravity    = Physics.gravity.y * multiplier;
                 state.VerticalVelocity += gravity * Time.fixedDeltaTime;
             }
@@ -131,7 +147,7 @@ namespace Game.Core.Systems
             MovementSettings settings
         )
         {
-            if (!state.IsControllable)
+            if (!model.IsMovable)
                 return;
 
             if (model.IsGrounded())
@@ -176,7 +192,7 @@ namespace Game.Core.Systems
 
                 if (currentSpeed < 1f)
                 {
-                    float targetSpeed  = settings.RunSpeed * settings.AirControlFactor;
+                    float targetSpeed  = settings.RunSpeed     * settings.AirControlFactor;
                     float acceleration = settings.Acceleration * settings.AirControlFactor;
                     float newSpeed     = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
                     
@@ -239,7 +255,6 @@ namespace Game.Core.Systems
                 state.HorizontalVelocity = new Vector3(evt.Force.x, 0, evt.Force.z);
                 state.VerticalVelocity   = evt.Force.y;
                 state.AirVelocity        = state.HorizontalVelocity;
-                state.IsControllable     = evt.Controllable;
             }
         }
 

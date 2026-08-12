@@ -124,9 +124,18 @@ namespace Game.Core.Systems
 
         private void StartPowerAttack(Guid characterID, AttackState state)
         {
+            var model = _context.GetModel(characterID);
+            if (model == null)
+                return;
+
             state.PowerAttackStarted = true;
             state.AttackElapsed      = 0f;
             state.WaveApplied        = false;
+
+            model.SetMovable(false);
+
+            _gameEventsBus.Publish(new OnForceEvent(
+                characterID, CalculateForce(model)));
 
             _gameEventsBus.Publish(new OnAttackStartedEvent(
                 characterID, AttackType.Power));
@@ -137,18 +146,14 @@ namespace Game.Core.Systems
             model.SetHitsEnabled(false);
             state.PowerAttackStarted = false;
 
+            model.SetMovable(true);
+
             _gameEventsBus.Publish(new OnAttackEndedEvent(
                 model.CharacterID, AttackType.Power));
         }
 
         private void HandlePowerAttack(ICharacterModel model, AttackState state)
         {
-            if (state.AttackElapsed == 0f)
-            {
-                Vector3 force = CalculateForce(model);
-                _gameEventsBus.Publish(new OnForceEvent(model.CharacterID, force, false));
-            }
-
             if (!state.WaveApplied && state.AttackElapsed >= model.Data.Combat.PowerAttackWaveStart)
             {
                 state.WaveApplied = true;

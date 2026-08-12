@@ -1,16 +1,32 @@
 using System;
 using Game.Core.Character;
+using Game.Core.Data;
 using UnityEngine;
 
 namespace Game.Core.Systems
 {
-    public class AimSystem : IAimSystem
+    public sealed class AimSystem : IAimSystem
     {
+        private const int MaxTrajectorySegments = 60;
+        private const float MouseRotationMultiplier = 5f;
+
         private readonly ICharacterModel _model;
+        private readonly Vector3[] _trajectoryPoints = new Vector3[MaxTrajectorySegments];
 
         public AimSystem(ICharacterModel model)
             => _model = model;
-        
+
+        public void Rotate(Vector2 lookDelta)
+        {
+            if (Mathf.Approximately(lookDelta.x, 0f))
+                return;
+
+            float rotation = lookDelta.x * CommonData.MouseSensitivity
+                * MouseRotationMultiplier;
+
+            _model.SetRotation(_model.Rotation * Quaternion.Euler(0f, rotation, 0f));
+        }
+
         public void Update()
         {
             var settings = _model.Data.Combat;
@@ -33,25 +49,27 @@ namespace Game.Core.Systems
             Vector3 position = start;
             
             float fixedDeltaTime = Time.fixedDeltaTime;
-            int segments = Math.Min(Mathf.CeilToInt(totalTime / fixedDeltaTime) + 1, 60);
-            
-            Vector3[] points = new Vector3[segments];
-            points[0] = position;
-            
+            int segments = Math.Min(
+                Mathf.CeilToInt(totalTime / fixedDeltaTime) + 1,
+                MaxTrajectorySegments);
+
+            _trajectoryPoints[0] = position;
+
             int count = 1;
             for (int i = 1; i < segments; i++)
             {
                 velocity.y += gravity * fixedDeltaTime;
                 position += velocity * fixedDeltaTime;
-                points[i] = position;
+
+                _trajectoryPoints[i] = position;
                 count++;
                 
                 if (position.y <= target.y && velocity.y < 0)
                     break;
             }
 
+            _model.SetAimPositions(_trajectoryPoints);
             _model.SetAimPositionCount(count);
-            _model.SetAimPositions(points);
         }
     }
 }

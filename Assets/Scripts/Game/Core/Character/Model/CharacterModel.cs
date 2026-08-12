@@ -10,6 +10,7 @@ namespace Game.Core.Character
 
         private bool _enabled;
         private bool _hitsEnabled;
+        private bool _isMovable = true;
 
         public Guid          CharacterID     => _id;
         public CharacterData Data            => _view.Data;
@@ -20,6 +21,7 @@ namespace Game.Core.Character
         public Vector3       Position        => _view.Transform.position;
         public Quaternion    Rotation        => _view.Transform.rotation;
         public bool          Enabled         => _enabled;
+        public bool          IsMovable       => _isMovable;
 
         public event Action<Collider> OnHitTrigger;
  
@@ -52,6 +54,9 @@ namespace Game.Core.Character
             else
                 _view.Hide();
         }
+
+        public void SetMovable(bool isMovable)
+            => _isMovable = isMovable;
 
         public void SetAimEnabled(bool enabled)
             => _view.Aim.gameObject.SetActive(enabled);

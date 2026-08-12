@@ -1,0 +1,29 @@
+{
+  "version": "4.0.0",
+  "installed_at": "2026-08-12T13:13:47.777Z",
+  "groups": {
+    "unity-skills": [
+      "unity-addressables",
+      "unity-asset-audit",
+      "unity-async-patterns",
+      "unity-csharp-standards",
+      "unity-dotween-safety",
+      "unity-editor-tools",
+      "unity-logic-audit",
+      "unity-script-audit",
+      "unity-ui-performance"
+    ],
+    "qa-skills": [
+      "unity-qa-generator",
+      "unity-qa-parser",
+      "unity-qa-scorer",
+      "unity-qa-verifier"
+    ]
+  },
+  "workflows": [
+    "build-ui-mcp.md",
+    "verify-assets.md",
+    "verify-logics.md",
+    "verify-scripts.md"
+  ]
+}

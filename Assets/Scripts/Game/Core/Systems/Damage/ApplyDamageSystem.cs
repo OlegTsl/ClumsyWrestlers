@@ -36,7 +36,8 @@ namespace Game.Core.Systems
             direction.Normalize();
 
             Vector3 force = direction * evt.Force;
-            _gameEventsBus.Publish(new OnForceEvent(evt.TargetID, force, true));
+            _gameEventsBus.Publish(new OnForceEvent(
+                evt.TargetID, force));
         }
 
         public void Dispose()

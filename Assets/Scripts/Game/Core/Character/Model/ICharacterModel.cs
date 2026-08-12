@@ -8,6 +8,7 @@ namespace Game.Core.Character
         void SetPosition(Vector3 position);
         void SetRotation(Quaternion rotation);
         void SetEnabled(bool enabled);
+        void SetMovable(bool isMovable);
         void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
         void SetAnimatorBool(int id, bool value);
         void SetAnimatorTrigger(int id);
@@ -26,6 +27,7 @@ namespace Game.Core.Character
         Vector3       Position        { get; }
         Quaternion    Rotation        { get; }
         bool          Enabled         { get; }
+        bool          IsMovable       { get; }
 
         bool IsGrounded();
         bool IsMoving();

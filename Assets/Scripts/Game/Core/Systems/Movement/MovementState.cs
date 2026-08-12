@@ -11,6 +11,5 @@ namespace Game.Core.Systems
         public float   VerticalVelocity;
         public float   AirTime;
         public bool    IsFalling;
-        public bool    IsControllable = true;
     }
 }

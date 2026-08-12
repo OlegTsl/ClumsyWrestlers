@@ -19,6 +19,7 @@ MonoBehaviour:
     WalkSpeed: 2
     Acceleration: 50
     Deceleration: 40
+    RotationSpeed: 500
     JumpImpulse: 7
     AirborneGravityMultiplier: 2
     AirControlFactor: 0.3
@@ -28,9 +29,10 @@ MonoBehaviour:
     SimpleAttackDuration: 1.1
     SimpleAttackHitboxStart: 0.3
     SimpleAttackHitboxEnd: 0.4
-    PowerAttackForce: 20
+    PowerAttackForce: 12
     PowerAttackDuration: 1.85
     PowerAttackDistance: 6
     PowerAttackJumpHeight: 1.5
-    PowerWaveRadius: 20
+    PowerAttackWaveStart: 1.25
+    PowerWaveRadius: 5
     PowerWaveHeight: 5

@@ -6,8 +6,7 @@ namespace Game.Core.Systems
     {
         private readonly Transform _character;
         private readonly Transform _camera;
-
-        private readonly Vector3 _offset = new Vector3(0f, 0f, -3f);
+        private readonly Vector3   _offset = new Vector3(0f, 0f, -3f);
 
         public LookSystem(Transform character, Transform camera)
         {
