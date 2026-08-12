@@ -29,6 +29,10 @@ MonoBehaviour:
     SimpleAttackDuration: 1.1
     SimpleAttackHitboxStart: 0.3
     SimpleAttackHitboxEnd: 0.4
+    SimpleAttackHitboxForwardOffset: 0.2
+    SimpleAttackHitboxRange: 0.65
+    SimpleAttackHitboxRadius: 0.2
+    SimpleAttackHitboxHeight: 1.2
     PowerAttackForce: 12
     PowerAttackDuration: 1.85
     PowerAttackDistance: 6

@@ -9,7 +9,6 @@ namespace Game.Core.Character
         private Guid           _id;
 
         private bool _enabled;
-        private bool _hitsEnabled;
         private bool _isMovable = true;
 
         public Guid          CharacterID     => _id;
@@ -22,8 +21,6 @@ namespace Game.Core.Character
         public Quaternion    Rotation        => _view.Transform.rotation;
         public bool          Enabled         => _enabled;
         public bool          IsMovable       => _isMovable;
-
-        public event Action<Collider> OnHitTrigger;
  
         public CharacterModel(
             ICharacterView view,
@@ -32,8 +29,6 @@ namespace Game.Core.Character
         {
             _view = view;
             _id   = characterId;
-
-            _view.OnHitTrigger += OnHitTriggered;
         }
 
         public void SetPosition(Vector3 position)
@@ -93,19 +88,5 @@ namespace Game.Core.Character
 
         public Vector3 GetVelocity()
             => _view.GetVelocity();
-
-        public void SetHitsEnabled(bool enabled)
-            => _hitsEnabled = enabled;
-
-        private void OnHitTriggered(Collider other)
-        {
-            if (_hitsEnabled)
-                OnHitTrigger?.Invoke(other);
-        }
-
-        public void Dispose()
-        {
-            _view.OnHitTrigger -= OnHitTriggered;
-        }
     }
 }

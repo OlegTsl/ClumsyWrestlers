@@ -25,6 +25,17 @@ namespace Game.Core.Systems
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
+
+            RegisterExistingCharacters();
+        }
+
+        private void RegisterExistingCharacters()
+        {
+            var characters = _context.AllCharacters;
+            for (int i = 0; i < characters.Count; i++)
+            {
+                Register(characters[i].CharacterID);
+            }
         }
 
         private void Register(Guid id)
@@ -101,7 +112,6 @@ namespace Game.Core.Systems
 
         private void EndSimpleAttack(ICharacterModel model, AttackState state)
         {
-            model.SetHitsEnabled(false);
             state.SimpleAttackStarted = false;
 
             _gameEventsBus.Publish(new OnAttackEndedEvent(
@@ -110,15 +120,9 @@ namespace Game.Core.Systems
 
         private void HandleSimpleAttack(ICharacterModel model, AttackState state)
         {
-            var settings = model.Data.Combat;
             state.AttackElapsed += Time.fixedDeltaTime;
 
-            bool enabled = state.AttackElapsed >= settings.SimpleAttackHitboxStart
-                        && state.AttackElapsed <  settings.SimpleAttackHitboxEnd;
-
-            model.SetHitsEnabled(enabled);
-
-            if (state.AttackElapsed >= settings.SimpleAttackDuration)
+            if (state.AttackElapsed >= model.Data.Combat.SimpleAttackDuration)
                 EndSimpleAttack(model, state);
         }
 
@@ -143,7 +147,6 @@ namespace Game.Core.Systems
 
         private void EndPowerAttack(ICharacterModel model, AttackState state)
         {
-            model.SetHitsEnabled(false);
             state.PowerAttackStarted = false;
 
             model.SetMovable(true);

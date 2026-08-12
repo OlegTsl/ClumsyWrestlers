@@ -34,7 +34,5 @@ namespace Game.Core.Character
         Vector3 TransformDirection(Vector3 direction);
         Vector3 InverseTransformDirection(Vector3 direction);
         Vector3 GetVelocity();
-
-        event Action<Collider> OnHitTrigger;
     }
 }

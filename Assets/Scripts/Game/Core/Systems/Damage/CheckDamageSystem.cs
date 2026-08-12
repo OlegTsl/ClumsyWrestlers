@@ -25,6 +25,8 @@ namespace Game.Core.Systems
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
+
+            RegisterExistingCharacters();
         }
 
         private void OnAttackStarted(OnAttackStartedEvent evt)
@@ -54,6 +56,15 @@ namespace Game.Core.Systems
             targets.Add(target.CharacterID);
             _gameEventsBus.Publish(new OnApplyDamageEvent(
                 evt.AttackerID, evt.TargetID, evt.Force));
+        }
+
+        private void RegisterExistingCharacters()
+        {
+            var characters = _context.AllCharacters;
+            for (int i = 0; i < characters.Count; i++)
+            {
+                Register(characters[i].CharacterID);
+            }
         }
 
         private void Register(Guid characterID)

@@ -28,7 +28,6 @@ namespace Game.Core.Character
         )
         {
             _model = model;
-            _model.OnHitTrigger += OnHit;
 
             _context       = context;
             _gameEventsBus = gameEventsBus;
@@ -47,17 +46,6 @@ namespace Game.Core.Character
                 model.Transform, Camera.main.transform);
 
             _aimSystem = new AimSystem(model);
-        }
-
-        private void OnHit(Collider other)
-        {
-            var target = _context.GetModel(other);
-            if (target == null)
-                return;
-
-            _gameEventsBus.Publish(new OnDamageEvent(
-                _model.CharacterID, target.CharacterID, target.Data.Combat.SimpleAttackForce
-            ));
         }
 
         private void HandleMove(MoveInput input)
@@ -148,8 +136,6 @@ namespace Game.Core.Character
             _inputEventsBus.Unsubscribe<JumpAction>(HandleJump);
             _inputEventsBus.Unsubscribe<SimpleAttackAction>(HandleSimpleAttack);
             _inputEventsBus.Unsubscribe<PowerAttackAction>(HandlePowerAttack);
-
-            _model.OnHitTrigger -= OnHit;
         }
     }
 }

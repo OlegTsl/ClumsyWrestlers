@@ -29,6 +29,17 @@ namespace Game.Core.Systems
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
+
+            RegisterExistingCharacters();
+        }
+
+        private void RegisterExistingCharacters()
+        {
+            var characters = _context.AllCharacters;
+            for (int i = 0; i < characters.Count; i++)
+            {
+                Register(characters[i].CharacterID);
+            }
         }
 
         private void Register(Guid id)

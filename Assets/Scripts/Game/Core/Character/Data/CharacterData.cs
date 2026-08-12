@@ -49,6 +49,12 @@ namespace Game.Core.Character
         [Range(0f,   2f)] public float SimpleAttackHitboxStart;
         [Range(0f,   2f)] public float SimpleAttackHitboxEnd;
 
+        [Header("Simple Attack Hit Detection")]
+        [Range(0f,    2f)] public float SimpleAttackHitboxForwardOffset;
+        [Range(0.01f, 5f)] public float SimpleAttackHitboxRange;
+        [Range(0.01f, 2f)] public float SimpleAttackHitboxRadius;
+        [Range(0f,    3f)] public float SimpleAttackHitboxHeight;
+
         [Header("Powered Attack")]
         [Range(0f,  50f)] public float PowerAttackForce;
         [Range(0.1f, 5f)] public float PowerAttackDuration;

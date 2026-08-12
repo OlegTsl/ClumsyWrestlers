@@ -7,11 +7,10 @@ namespace Game.Core.Systems
 {
     public sealed class AimSystem : IAimSystem
     {
-        private const int MaxTrajectorySegments = 60;
-        private const float MouseRotationMultiplier = 5f;
+        private const int CMaxTrajectorySegments = 60;
 
         private readonly ICharacterModel _model;
-        private readonly Vector3[] _trajectoryPoints = new Vector3[MaxTrajectorySegments];
+        private readonly Vector3[] _trajectoryPoints = new Vector3[CMaxTrajectorySegments];
 
         public AimSystem(ICharacterModel model)
             => _model = model;
@@ -21,9 +20,7 @@ namespace Game.Core.Systems
             if (Mathf.Approximately(lookDelta.x, 0f))
                 return;
 
-            float rotation = lookDelta.x * CommonData.MouseSensitivity
-                * MouseRotationMultiplier;
-
+            float rotation = lookDelta.x * CommonData.MouseSensitivity;
             _model.SetRotation(_model.Rotation * Quaternion.Euler(0f, rotation, 0f));
         }
 
@@ -51,7 +48,7 @@ namespace Game.Core.Systems
             float fixedDeltaTime = Time.fixedDeltaTime;
             int segments = Math.Min(
                 Mathf.CeilToInt(totalTime / fixedDeltaTime) + 1,
-                MaxTrajectorySegments);
+                CMaxTrajectorySegments);
 
             _trajectoryPoints[0] = position;
 

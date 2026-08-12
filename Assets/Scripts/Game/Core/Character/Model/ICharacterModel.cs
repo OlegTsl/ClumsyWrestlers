@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Core.Character
 {
-    public interface ICharacterModel : IDisposable
+    public interface ICharacterModel
     {
         void SetPosition(Vector3 position);
         void SetRotation(Quaternion rotation);
@@ -13,7 +13,6 @@ namespace Game.Core.Character
         void SetAnimatorBool(int id, bool value);
         void SetAnimatorTrigger(int id);
         void ApplyVelocity(Vector3 velocity);
-        void SetHitsEnabled(bool enabled);
         void SetAimEnabled(bool enabled);
         void SetAimPositions(Vector3[] positions);
         void SetAimPositionCount(int count);
@@ -35,7 +34,5 @@ namespace Game.Core.Character
         Vector3 TransformDirection(Vector3 direction);
         Vector3 InverseTransformDirection(Vector3 direction);
         Vector3 GetVelocity();
-
-        event Action<Collider> OnHitTrigger;
     }
 }

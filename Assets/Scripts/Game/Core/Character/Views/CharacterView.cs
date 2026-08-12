@@ -30,8 +30,6 @@ namespace Game.Core.Character
         public Transform               Transform        => transform;
         public LineRenderer            Aim              => _aim;
 
-        public event Action<Collider> OnHitTrigger;
-
         private void Awake()
         {
             _attackColliders = new Collider[]
@@ -92,12 +90,6 @@ namespace Game.Core.Character
 
         public Vector3 GetVelocity()
             => _rigidbody.velocity;
-
-        private void OnTriggerEnter(Collider other)
-        {
-            if (other.gameObject.layer == LayerData.Hitbox)
-                OnHitTrigger?.Invoke(other);
-        }
 
         private void OnCollisionExit(Collision collision)
         {
