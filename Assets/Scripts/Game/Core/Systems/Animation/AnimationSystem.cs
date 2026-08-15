@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Game.Core.Character;
 using Game.Core.Data;
 using Game.Core.GameEvents;
@@ -12,7 +10,6 @@ namespace Game.Core.Systems
     {
         private readonly GameEventsBus     _events;
         private readonly ICharacterContext _context;
-        private readonly Dictionary<Guid, AnimationState> _states = new();
 
         public AnimationSystem(
             GameEventsBus     events,
@@ -25,28 +22,10 @@ namespace Game.Core.Systems
             _events.Subscribe<OnJumpEvent>(OnJump);
             _events.Subscribe<OnFallEvent>(OnFall);
             _events.Subscribe<OnMoveEvent>(OnMove);
-            _events.Subscribe<OnAttackStartedEvent>(OnAttackStarted);
-
-            _context.OnCharacterAdded   += Register;
-            _context.OnCharacterRemoved += Unregister;
-
-            RegisterExistingCharacters();
+            _events.Subscribe<OnHitEvent>(OnHit);
+            _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
         }
-
-        private void RegisterExistingCharacters()
-        {
-            var characters = _context.AllCharacters;
-            for (int i = 0; i < characters.Count; i++)
-            {
-                Register(characters[i].CharacterID);
-            }
-        }
-
-        private void Register(Guid id)
-            => _states[id] = new AnimationState();
-
-        private void Unregister(Guid id)
-            => _states.Remove(id);
 
         private void OnJump(OnJumpEvent evt)
         {
@@ -76,37 +55,44 @@ namespace Game.Core.Systems
                 evt.Direction != Vector3.zero);
         }
 
-        private void OnAttackStarted(OnAttackStartedEvent evt)
+        private void OnHit(OnHitEvent evt)
         {
-            switch (evt.Type)
-            {
-                case AttackType.Simple:
-                    OnSimpleAttackStarted(evt.CharacterID);
-                    break;
-                case AttackType.Power:
-                    OnPowerAttackStarted(evt.CharacterID);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void OnSimpleAttackStarted(Guid characterID)
-        {
-            var character = _context.GetModel(characterID);
+            var character = _context.GetModel(evt.CharacterID);
             if (character == null || !character.Enabled)
                 return;
 
+            character.SetAnimatorTrigger(AnimationData.HitTrigger);
+        }
+
+        private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
+        {
+            var character = _context.GetModel(evt.CharacterID);
+            if (character == null || !character.Enabled)
+                return;
+
+            PowerAttackSettings settings = character.Data.Combat.PowerAttack;
+            if (settings == null)
+                return;
+
+            character.SetAnimatorFloat(AnimationData.PowerAttackSpeed,
+                settings.AnimationSpeed, 0f, Time.deltaTime);
+            character.SetAnimatorTrigger(AnimationData.PowerAttackTrigger);
+        }
+
+        private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
+        {
+            var character = _context.GetModel(evt.CharacterID);
+            if (character == null || !character.Enabled)
+                return;
+
+            SimpleAttackSettings settings = character.Data.Combat.SimpleAttack;
+            if (settings == null)
+                return;
+
+            character.SetAnimatorFloat(AnimationData.SimpleAttackSpeed,
+                settings.AnimationSpeed, 0f, Time.deltaTime);
+            character.SetAnimatorBool(AnimationData.MirrorPunch, evt.IsMirrored);
             character.SetAnimatorTrigger(AnimationData.PunchTrigger);
-        }
-
-        private void OnPowerAttackStarted(Guid characterID)
-        {
-            var character = _context.GetModel(characterID);
-            if (character == null || !character.Enabled)
-                return;
-
-            character.SetAnimatorTrigger(AnimationData.PowerPunchTrigger);
         }
 
         public void Tick()
@@ -142,7 +128,9 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnJumpEvent>(OnJump);
             _events.Unsubscribe<OnFallEvent>(OnFall);
             _events.Unsubscribe<OnMoveEvent>(OnMove);
-            _events.Unsubscribe<OnAttackStartedEvent>(OnAttackStarted);
+            _events.Unsubscribe<OnHitEvent>(OnHit);
+            _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
         }
     }
 }

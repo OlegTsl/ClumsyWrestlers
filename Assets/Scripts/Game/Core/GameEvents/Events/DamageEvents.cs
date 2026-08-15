@@ -1,30 +1,55 @@
 using System;
+using UnityEngine;
 
 namespace Game.Core.GameEvents
 {
-    public readonly struct OnDamageEvent
+    public readonly struct HitData
     {
-        public readonly Guid AttackerID { get; }
-        public readonly Guid TargetID   { get; }
-        public readonly float Force     { get; }
-        public OnDamageEvent(Guid attackerID, Guid targetID, float force)
+        public AttackType AttackType { get; }
+        public Guid AttackerID { get; }
+        public Guid TargetID { get; }
+        public Vector3 Direction { get; }
+
+        public HitData(
+            AttackType attackType,
+            Guid attackerID,
+            Guid targetID,
+            Vector3 direction
+        )
         {
+            AttackType = attackType;
             AttackerID = attackerID;
-            TargetID   = targetID;
-            Force      = force;
+            TargetID = targetID;
+            Direction = direction;
         }
     }
 
-    public readonly struct OnApplyDamageEvent
+    public readonly struct OnSimpleAttackHitDetectedEvent
     {
-        public readonly Guid AttackerID { get; }
-        public readonly Guid TargetID   { get; }
-        public readonly float Force     { get; }
-        public OnApplyDamageEvent(Guid attackerID, Guid targetID, float force)
+        public HitData Hit { get; }
+
+        public OnSimpleAttackHitDetectedEvent(
+            Guid attackerID,
+            Guid targetID,
+            Vector3 direction
+        )
         {
-            AttackerID = attackerID;
-            TargetID   = targetID;
-            Force      = force;
+            Hit = new HitData(
+                AttackType.Simple,
+                attackerID,
+                targetID,
+                direction);
         }
     }
+
+    public readonly struct OnHitResolvedEvent
+    {
+        public HitData Hit { get; }
+
+        public OnHitResolvedEvent(HitData hit)
+        {
+            Hit = hit;
+        }
+    }
+
 }

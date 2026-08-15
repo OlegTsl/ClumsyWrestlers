@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Game.Core.GameEvents
 {
@@ -8,36 +9,47 @@ namespace Game.Core.GameEvents
         Power
     }
 
-    public readonly struct OnAttackEvent : ICharacterEvent
+    public readonly struct OnPowerAttackRequestedEvent : ICharacterEvent
     {
-        public readonly Guid       CharacterID { get; }
-        public readonly AttackType Type        { get; }
-        public OnAttackEvent(Guid characterID, AttackType type)
+        public readonly Guid CharacterID { get; }
+
+        public OnPowerAttackRequestedEvent(Guid characterID)
+            => CharacterID = characterID;
+    }
+
+    public readonly struct OnPowerAttackStartedEvent : ICharacterEvent
+    {
+        public Guid CharacterID { get; }
+        public AnimationClip AnimationClip { get; }
+
+        public OnPowerAttackStartedEvent(
+            Guid characterID,
+            AnimationClip animationClip
+        )
         {
             CharacterID = characterID;
-            Type        = type;
+            AnimationClip = animationClip;
         }
     }
 
-    public readonly struct OnAttackStartedEvent : ICharacterEvent
+    public enum PowerAttackEndReason
     {
-        public readonly Guid       CharacterID { get; }
-        public readonly AttackType Type        { get; }
-        public OnAttackStartedEvent(Guid characterID, AttackType type)
-        {
-            CharacterID = characterID;
-            Type        = type;
-        }
+        Completed,
+        Interrupted
     }
 
-    public readonly struct OnAttackEndedEvent : ICharacterEvent
+    public readonly struct OnPowerAttackEndedEvent : ICharacterEvent
     {
-        public readonly Guid       CharacterID { get; }
-        public readonly AttackType Type        { get; }
-        public OnAttackEndedEvent(Guid characterID, AttackType type)
+        public Guid CharacterID { get; }
+        public PowerAttackEndReason Reason { get; }
+
+        public OnPowerAttackEndedEvent(
+            Guid characterID,
+            PowerAttackEndReason reason
+        )
         {
             CharacterID = characterID;
-            Type        = type;
+            Reason = reason;
         }
     }
 }

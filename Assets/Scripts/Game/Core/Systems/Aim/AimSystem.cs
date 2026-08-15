@@ -33,14 +33,18 @@ namespace Game.Core.Systems
             direction.Normalize();
 
             Vector3 start  = _model.Position;
-            Vector3 target = start + direction * settings.PowerAttackDistance;
+            PowerAttackSettings powerAttack = settings.PowerAttack;
+            if (powerAttack == null)
+                return;
+
+            Vector3 target = start + direction * powerAttack.Distance;
             target.y = start.y;
             
             float gravity          = Physics.gravity.y;            
-            float verticalVelocity = Mathf.Sqrt(-2f * gravity * settings.PowerAttackJumpHeight);
+            float verticalVelocity = Mathf.Sqrt(-2f * gravity * powerAttack.JumpHeight);
             float totalTime        = 2f * verticalVelocity / Mathf.Abs(gravity);
             
-            float horizontalSpeed = settings.PowerAttackDistance / totalTime;
+            float horizontalSpeed = powerAttack.Distance / totalTime;
             
             Vector3 velocity = direction * horizontalSpeed + Vector3.up * verticalVelocity;
             Vector3 position = start;

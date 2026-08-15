@@ -8,10 +8,13 @@ namespace Game.Core.Systems
         {
             Container.BindInterfacesAndSelfTo<MovementSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<AnimationSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<AttackSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<SimpleAttackHitDetectionSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<PowerAttackSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<SlamAttackSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<SimpleAttackSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<HitDetectionSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<CheckDamageSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<ApplyDamageSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<HitReactionSystem>().AsSingle();
         }
     }
 }

@@ -41,7 +41,7 @@ namespace Game.Core.Level
             if (_level != null)
             {
                 _assetManager.UnloadAsset(_levelName);
-                Debug.LogError($"Level unloaded: {_levelName}");
+                Debug.Log($"Level unloaded: {_levelName}");
 
                 _levelName = "";
                 _level     = null;

@@ -41,7 +41,10 @@ namespace Game.Core.Systems
         }
 
         private void Register(Guid id)
-            => _states[id] = new MovementState();
+        {
+            if (!_states.ContainsKey(id))
+                _states[id] = new MovementState();
+        }
 
         private void Unregister(Guid id)
             => _states.Remove(id);
@@ -146,7 +149,7 @@ namespace Game.Core.Systems
             }
             else
             {
-                float multiplier = model.IsMovable ? settings.AirborneGravityMultiplier : 1f;
+                float multiplier = model.IsMovable ? settings.GravityMultiplier : 1f;
                 float gravity    = Physics.gravity.y * multiplier;
                 state.VerticalVelocity += gravity * Time.fixedDeltaTime;
             }
@@ -261,12 +264,18 @@ namespace Game.Core.Systems
 
         private void OnForce(OnForceEvent evt)
         {
-            if (_states.TryGetValue(evt.CharacterID, out var state))
+            ICharacterModel model = _context.GetModel(evt.CharacterID);
+            if (model == null || !model.Enabled ||
+                !_states.TryGetValue(evt.CharacterID, out var state))
             {
-                state.HorizontalVelocity = new Vector3(evt.Force.x, 0, evt.Force.z);
-                state.VerticalVelocity   = evt.Force.y;
-                state.AirVelocity        = state.HorizontalVelocity;
+                return;
             }
+
+            state.HorizontalVelocity = new Vector3(evt.Force.x, 0f, evt.Force.z);
+            state.VerticalVelocity = evt.Force.y;
+            state.AirVelocity = state.HorizontalVelocity;
+
+            model.ApplyVelocity(evt.Force);
         }
 
         public void Dispose()

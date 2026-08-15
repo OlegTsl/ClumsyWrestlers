@@ -15,28 +15,36 @@ MonoBehaviour:
   _characterName: str_ortiz
   _characterMass: 80
   _movement:
-    RunSpeed: 6
-    WalkSpeed: 2
-    Acceleration: 50
-    Deceleration: 40
-    RotationSpeed: 500
-    JumpImpulse: 7
-    AirborneGravityMultiplier: 2
-    AirControlFactor: 0.3
-    FallingDelay: 2.5
+    _runSpeed: 6
+    _acceleration: 50
+    _deceleration: 40
+    _rotationSpeed: 500
+    _jumpImpulse: 7
+    _gravityMultiplier: 2
+    _airControlFactor: 0.3
+    _fallingDelay: 2.5
   _combatSettings:
-    SimpleAttackForce: 10
-    SimpleAttackDuration: 1.1
-    SimpleAttackHitboxStart: 0.3
-    SimpleAttackHitboxEnd: 0.4
-    SimpleAttackHitboxForwardOffset: 0.2
-    SimpleAttackHitboxRange: 0.65
-    SimpleAttackHitboxRadius: 0.2
-    SimpleAttackHitboxHeight: 1.2
-    PowerAttackForce: 12
-    PowerAttackDuration: 1.85
-    PowerAttackDistance: 6
-    PowerAttackJumpHeight: 1.5
-    PowerAttackWaveStart: 1.25
-    PowerWaveRadius: 5
-    PowerWaveHeight: 5
+    _simpleAttack:
+      _animationClip: {fileID: -203655887218126122, guid: bcf3dfb881a7541bf88b2c036d527671,
+        type: 3}
+      _animationSpeed: 1.5
+      _hitboxStartNormalized: 0.3
+      _hitboxEndNormalized: 0.5
+      _hitboxRange: 0.85
+      _hitboxRadius: 0.3
+      _handIkWeight: 0.75
+      _handIkReach: 0.65
+      _knockbackForce: 5
+    _powerAttack:
+      _animationClip: {fileID: -203655887218126122, guid: 567440027bca6455f884b7c9a7db1aa8,
+        type: 3}
+      _animationSpeed: 1.5
+      _distance: 6
+      _jumpHeight: 1.5
+      _waveStartNormalized: 0.625
+      _waveRadius: 5
+      _waveHeight: 5
+      _knockbackForce: 12
+    _hitReaction:
+      _leanAngle: 12
+      _leanDuration: 0.3

@@ -17,6 +17,7 @@ namespace Game.Core.Character
         public Transform     Transform       => _view.Transform;
         public LineRenderer  Aim             => _view.Aim;
         public Vector3       Forward         => _view.Transform.forward;
+        public Vector3       AttackOrigin    => _view.AttackOrigin.position;
         public Vector3       Position        => _view.Transform.position;
         public Quaternion    Rotation        => _view.Transform.rotation;
         public bool          Enabled         => _enabled;
@@ -39,6 +40,9 @@ namespace Game.Core.Character
 
         public void SetRotation(Quaternion rotation)
             => _view.SetRotation(rotation);
+
+        public void SetVisualLean(Quaternion localRotation)
+            => _view.SetVisualLean(localRotation);
 
         public void SetEnabled(bool enabled)
         {
@@ -65,6 +69,16 @@ namespace Game.Core.Character
         public void SetAnimatorTrigger(int id)
             => _view.SetAnimatorTrigger(id);
 
+        public void SetAttackHandIk(
+            AttackHand hand,
+            Vector3 position,
+            float weight
+        )
+            => _view.SetAttackHandIk(hand, position, weight);
+
+        public void ClearAttackHandIk()
+            => _view.ClearAttackHandIk();
+
         public void SetAimPositions(Vector3[] positions)
             => _view.SetAimPositions(positions);
 
@@ -88,5 +102,15 @@ namespace Game.Core.Character
 
         public Vector3 GetVelocity()
             => _view.GetVelocity();
+
+        public void Dispose()
+        {
+            if (_view == null)
+                return;
+
+            _enabled = false;
+            _view.DisposeAction?.Invoke();
+            _view = null;
+        }
     }
 }

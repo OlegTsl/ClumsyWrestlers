@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Core.Character
 {
-    public interface ICharacterModel
+    public interface ICharacterModel : IVisualLean, IDisposable
     {
         void SetPosition(Vector3 position);
         void SetRotation(Quaternion rotation);
@@ -12,6 +12,8 @@ namespace Game.Core.Character
         void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
         void SetAnimatorBool(int id, bool value);
         void SetAnimatorTrigger(int id);
+        void SetAttackHandIk(AttackHand hand, Vector3 position, float weight);
+        void ClearAttackHandIk();
         void ApplyVelocity(Vector3 velocity);
         void SetAimEnabled(bool enabled);
         void SetAimPositions(Vector3[] positions);
@@ -23,6 +25,7 @@ namespace Game.Core.Character
         Transform     Transform       { get; }
         LineRenderer  Aim             { get; }
         Vector3       Forward         { get; }
+        Vector3       AttackOrigin    { get; }
         Vector3       Position        { get; }
         Quaternion    Rotation        { get; }
         bool          Enabled         { get; }

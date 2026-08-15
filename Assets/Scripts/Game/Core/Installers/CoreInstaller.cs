@@ -3,7 +3,6 @@ using Game.Core.Controllers;
 using Game.Core.GameEvents;
 using Game.Core.Level;
 using Game.Core.Round;
-using Game.Core.Systems;
 using Zenject;
 
 namespace Game.Core.Installers
@@ -21,8 +20,6 @@ namespace Game.Core.Installers
             LevelInstaller.Install(Container);
             CharacterInstaller.Install(Container);
             RoundInstaller.Install(Container);
-            
-            SystemsInstaller.Install(Container);
         }
     }
 }

@@ -10,15 +10,18 @@ namespace Game.Core.Round
 {
     public class RoundController : IRoundController, ILateTickable
     {
-        private readonly ICharacterContext _context;
-        private readonly ILevelController  _levelController;
-        private readonly ICharacterBuilder _characterBuilder;
-        private readonly IAssetManager     _assetManager;
-        private readonly GameEventsBus     _gameEventsBus;
-        private readonly InputEventsBus    _inputEventsBus;
+        private readonly ICharacterContext  _context;
+        private readonly ILevelController   _levelController;
+        private readonly ICharacterBuilder  _characterBuilder;
+        private readonly IAssetManager      _assetManager;
+        private readonly GameEventsBus      _gameEventsBus;
+        private readonly InputEventsBus     _inputEventsBus;
+        private readonly IRoundSystemsScope _systemsScope;
 
         private ICharacterController _characterController;
         private IBotController       _botController;
+        private ICharacterModel      _player;
+        private ICharacterModel      _enemy;
         
         public RoundController(
             ICharacterContext context,
@@ -26,7 +29,8 @@ namespace Game.Core.Round
             ICharacterBuilder characterBuilder,
             IAssetManager     assetManager,
             GameEventsBus     gameEventsBus,
-            InputEventsBus    inputEventsBus
+            InputEventsBus    inputEventsBus,
+            IRoundSystemsScope systemsScope
         )
         {
             _context          = context;
@@ -35,41 +39,51 @@ namespace Game.Core.Round
             _assetManager     = assetManager;
             _gameEventsBus    = gameEventsBus;
             _inputEventsBus   = inputEventsBus;
+            _systemsScope     = systemsScope;
         }
 
         public async UniTask StartRound(string levelAddress)
         {
-            await LoadLevel(levelAddress);
+            EndRound();
 
-            var (player, enemy) = await UniTask.WhenAll(
-                _characterBuilder.BuidCharacter("Wrestler"),
-                _characterBuilder.BuidCharacter("Wrestler")
-            );
-
-            if (player != null)
+            try
             {
-                var inputSources = new IInputSource[]
+                await LoadLevel(levelAddress);
+
+                var (player, enemy) = await UniTask.WhenAll(
+                    _characterBuilder.BuidCharacter("Wrestler"),
+                    _characterBuilder.BuidCharacter("Wrestler")
+                );
+
+                _player = player;
+                _enemy  = enemy;
+
+                if (player != null)
                 {
-                    new KeyboardSource(priority: 0),
-                    new MouseSource   (priority: 1)
-                };
+                    var inputSources = new IInputSource[]
+                    {
+                        new KeyboardSource(priority: 0),
+                        new MouseSource   (priority: 1)
+                    };
 
-                if (_characterController != null)
-                    _characterController.Dispose();
+                    _characterController = new CharacterController(
+                        player, inputSources, _inputEventsBus, _gameEventsBus);
 
-                _characterController = new CharacterController(
-                    _context, player, inputSources, _inputEventsBus, _gameEventsBus);
-                
-                _levelController.SpawnCharacter(player, true);
+                    _levelController.SpawnCharacter(player, true);
+                }
+
+                if (enemy != null)
+                {
+                    _botController = new BotController(enemy);
+                    _levelController.SpawnCharacter(enemy, false);
+                }
+
+                _systemsScope.StartRound();
             }
-
-            if (enemy != null)
+            catch
             {
-                if (_botController != null)
-                    _botController.Dispose();
-
-                _botController = new BotController(enemy);
-                _levelController.SpawnCharacter(enemy, false);
+                EndRound();
+                throw;
             }
         }
 
@@ -84,9 +98,6 @@ namespace Game.Core.Round
 
         public void EndRound()
         {
-            UnloadLevel();
-            UnloadCharacter("Wrestler");
-
             if (_characterController != null)
             {
                 _characterController.Dispose();
@@ -98,6 +109,24 @@ namespace Game.Core.Round
                 _botController.Dispose();
                 _botController = null;
             }
+
+            _systemsScope.EndRound();
+
+            DisposeCharacter(ref _player);
+            DisposeCharacter(ref _enemy);
+
+            UnloadLevel();
+            UnloadCharacter("Wrestler");
+        }
+
+        private void DisposeCharacter(ref ICharacterModel character)
+        {
+            if (character == null)
+                return;
+
+            _context.RemoveCharacter(character.CharacterID);
+            character.Dispose();
+            character = null;
         }
 
         public void LateTick()
@@ -105,5 +134,8 @@ namespace Game.Core.Round
             if (_characterController != null)
                 _characterController.LateTick();
         }
+
+        public void Dispose()
+            => EndRound();
     }
 }

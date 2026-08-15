@@ -8,7 +8,6 @@ namespace Game.Core.Character
 {
     public sealed class CharacterController : ICharacterController
     {
-        private readonly ICharacterContext _context;
         private readonly ICharacterModel   _model;
         private readonly InputController   _inputController;
         private readonly InputEventsBus    _inputEventsBus;
@@ -20,16 +19,13 @@ namespace Game.Core.Character
         private bool _isMoveInputActive;
 
         public CharacterController(
-            ICharacterContext         context,
             ICharacterModel           model,
             IEnumerable<IInputSource> inputSources,
             InputEventsBus            inputEventsBus,
             GameEventsBus             gameEventsBus
         )
         {
-            _model = model;
-
-            _context       = context;
+            _model         = model;
             _gameEventsBus = gameEventsBus;
 
             _inputEventsBus = inputEventsBus;
@@ -82,19 +78,20 @@ namespace Game.Core.Character
 
         private void HandleJump(JumpAction action)
         {
-            if (action.EventType == InputEventType.Pressed)
-            {
-                _gameEventsBus.Publish(new OnJumpEvent(
-                    _model.CharacterID
-                ));
-            }
+            if (action.EventType != InputEventType.Pressed)
+                return;
+
+            _gameEventsBus.Publish(new OnJumpEvent(
+                _model.CharacterID));
         }
 
         private void HandleSimpleAttack(SimpleAttackAction action)
         {
-            _gameEventsBus.Publish(new OnAttackEvent(
-                _model.CharacterID, AttackType.Simple
-            ));
+            if (action.EventType == InputEventType.Held)
+                return;
+
+            _gameEventsBus.Publish(new OnSimpleAttackInputEvent(
+                _model.CharacterID, action.EventType == InputEventType.Pressed));
         }
 
         private void HandlePowerAttack(PowerAttackAction action)
@@ -113,9 +110,8 @@ namespace Game.Core.Character
             {
                 _isAiming = false;
 
-                _gameEventsBus.Publish(new OnAttackEvent(
-                    _model.CharacterID, AttackType.Power
-                ));
+                _gameEventsBus.Publish(
+                    new OnPowerAttackRequestedEvent(_model.CharacterID));
             }
 
             _model.SetAimEnabled(_isAiming);

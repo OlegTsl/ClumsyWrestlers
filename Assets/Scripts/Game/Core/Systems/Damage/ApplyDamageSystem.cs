@@ -18,29 +18,52 @@ namespace Game.Core.Systems
             _gameEventsBus = gameEventsBus;
             _context       = context;
 
-            _gameEventsBus.Subscribe<OnApplyDamageEvent>(ApplyDamage);
+            _gameEventsBus.Subscribe<OnHitResolvedEvent>(ApplyDamage);
         }
 
-        private void ApplyDamage(OnApplyDamageEvent evt)
+        private void ApplyDamage(OnHitResolvedEvent evt)
         {
-            var attackerModel = _context.GetModel(evt.AttackerID);
-            var targetModel   = _context.GetModel(evt.TargetID);
+            HitData hit = evt.Hit;
+            var attackerModel = _context.GetModel(hit.AttackerID);
+            var targetModel = _context.GetModel(hit.TargetID);
 
-            if (attackerModel == null || targetModel == null)
+            if (attackerModel == null || targetModel == null ||
+                !attackerModel.Enabled || !targetModel.Enabled)
+            {
                 return;
+            }
 
-            Vector3 direction = targetModel.Transform.position -
-                attackerModel.Transform.position;
+            float force = GetKnockbackForce(hit, attackerModel);
+            if (force > 0f)
+            {
+                ApplyForce(hit, force);
+            }
 
-            direction.y = 1.0f;
+            _gameEventsBus.Publish(new OnHitEvent(hit.TargetID));
+        }
+
+        private static float GetKnockbackForce(HitData hit, ICharacterModel attacker)
+        {
+            if (hit.AttackType == AttackType.Power)
+                return attacker.Data.Combat.PowerAttack?.KnockbackForce ?? 0f;
+
+            SimpleAttackSettings settings =
+                attacker.Data.Combat.SimpleAttack;
+            return settings?.KnockbackForce ?? 0f;
+        }
+
+        private void ApplyForce(HitData hit, float force)
+        {
+            Vector3 direction = hit.Direction;
+            direction.y = hit.AttackType == AttackType.Power ? 1f : 0f;
             direction.Normalize();
 
-            Vector3 force = direction * evt.Force;
             _gameEventsBus.Publish(new OnForceEvent(
-                evt.TargetID, force));
+                hit.TargetID,
+                direction * force));
         }
 
         public void Dispose()
-            => _gameEventsBus.Unsubscribe<OnApplyDamageEvent>(ApplyDamage);
+            => _gameEventsBus.Unsubscribe<OnHitResolvedEvent>(ApplyDamage);
     }
 }

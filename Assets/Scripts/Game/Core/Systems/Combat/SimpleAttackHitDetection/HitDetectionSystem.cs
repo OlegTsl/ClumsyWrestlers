@@ -9,20 +9,18 @@ using Zenject;
 
 namespace Game.Core.Systems
 {
-    public sealed class SimpleAttackHitDetectionSystem :
-        ISimpleAttackHitDetectionSystem,
-        IFixedTickable
+    public sealed class HitDetectionSystem : IHitDetectionSystem, IFixedTickable
     {
-        private const int   HitBufferCapacity = 64;
-        private const float MinimumDirectionSqrMagnitude = 0.0001f;
+        private const int   CHitBufferCapacity            = 32;
+        private const float CMinimumDirectionSqrMagnitude = 0.0001f;
 
         private readonly GameEventsBus     _gameEventsBus;
         private readonly ICharacterContext _context;
-        private readonly Collider[] _hitBuffer = new Collider[HitBufferCapacity];
-        private readonly Dictionary<Guid, SimpleAttackHitDetectionState> _states = new();
+        private readonly Collider[] _hitBuffer = new Collider[CHitBufferCapacity];
+        private readonly Dictionary<Guid, HitDetectionState> _states = new();
         private readonly int _hitboxLayerMask = 1 << LayerData.Hitbox;
 
-        public SimpleAttackHitDetectionSystem(
+        public HitDetectionSystem(
             GameEventsBus     gameEventsBus,
             ICharacterContext context
         )
@@ -30,8 +28,8 @@ namespace Game.Core.Systems
             _gameEventsBus = gameEventsBus;
             _context       = context;
 
-            _gameEventsBus.Subscribe<OnAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Subscribe<OnAttackEndedEvent>(OnAttackEnded);
+            _gameEventsBus.Subscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
+            _gameEventsBus.Subscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
@@ -55,15 +53,14 @@ namespace Game.Core.Systems
                 }
 
                 state.Elapsed += Time.fixedDeltaTime;
-                DetectHitsDuringActiveWindow(attacker, state.Elapsed);
+                DetectHits(attacker, state);
             }
         }
 
-        private void DetectHitsDuringActiveWindow(ICharacterModel attacker, float elapsed)
+        private void DetectHits(ICharacterModel attacker, HitDetectionState state)
         {
-            var settings = attacker.Data.Combat;
-            if (elapsed < settings.SimpleAttackHitboxStart ||
-                elapsed >= settings.SimpleAttackHitboxEnd)
+            if (state.Elapsed < state.ActiveWindowStart ||
+                state.Elapsed >= state.ActiveWindowEnd)
             {
                 return;
             }
@@ -71,24 +68,23 @@ namespace Game.Core.Systems
             Vector3 forward = attacker.Forward;
             forward.y = 0f;
 
-            if (forward.sqrMagnitude < MinimumDirectionSqrMagnitude)
+            if (forward.sqrMagnitude < CMinimumDirectionSqrMagnitude)
                 return;
 
             forward.Normalize();
 
-            Vector3 center = attacker.Position + Vector3.up * settings.SimpleAttackHitboxHeight;
-            Vector3 start  = center  + forward * settings.SimpleAttackHitboxForwardOffset;
-            Vector3 end    = start   + forward * settings.SimpleAttackHitboxRange;
+            Vector3 start = attacker.AttackOrigin;
+            Vector3 end   = start + forward * state.HitboxRange;
 
-            int hitCount = CollisionsExtension.OverlapCapsule(start, end,
-                settings.SimpleAttackHitboxRadius, _hitBuffer, _hitboxLayerMask);
+            int hits = CollisionsExtension.OverlapCapsule(start, end,
+                state.HitboxRadius, _hitBuffer, _hitboxLayerMask);
 
-            PublishDetectedHits(attacker, settings.SimpleAttackForce, hitCount);
+            PublishDetectedHits(attacker, hits);
         }
 
-        private void PublishDetectedHits(ICharacterModel attacker, float force, int hitCount)
+        private void PublishDetectedHits(ICharacterModel attacker, int hits)
         {
-            for (int i = 0; i < hitCount; i++)
+            for (int i = 0; i < hits; i++)
             {
                 Collider hitCollider = _hitBuffer[i];
                 _hitBuffer[i] = null;
@@ -103,28 +99,41 @@ namespace Game.Core.Systems
                     continue;
                 }
 
-                _gameEventsBus.Publish(new OnDamageEvent(
-                    attacker.CharacterID, target.CharacterID, force));
+                Vector3 hitDirection = target.Position - attacker.Position;
+                hitDirection.y = 0f;
+
+                if (hitDirection.sqrMagnitude < CMinimumDirectionSqrMagnitude)
+                    hitDirection = attacker.Forward;
+
+                hitDirection.Normalize();
+
+                _gameEventsBus.Publish(new OnSimpleAttackHitDetectedEvent(
+                    attacker.CharacterID, target.CharacterID, hitDirection));
             }
         }
 
-        private void OnAttackStarted(OnAttackStartedEvent evt)
+        private void OnAttackStarted(OnSimpleAttackStartedEvent evt)
         {
-            if (evt.Type != AttackType.Simple)
-                return;
-
             if (!_states.TryGetValue(evt.CharacterID, out var state))
                 return;
 
-            state.IsActive = true;
-            state.Elapsed = 0f;
+            var attacker = _context.GetModel(evt.CharacterID);
+            SimpleAttackSettings settings = attacker?.Data.Combat.SimpleAttack;
+            
+            if (settings == null || settings.Duration <= 0f)
+            {
+                state.Reset();
+                return;
+            }
+
+            state.BeginAttack(
+                settings.Duration * settings.HitboxStartNormalized,
+                settings.Duration * settings.HitboxEndNormalized,
+                settings.HitboxRange, settings.HitboxRadius);
         }
 
-        private void OnAttackEnded(OnAttackEndedEvent evt)
+        private void OnAttackEnded(OnSimpleAttackEndedEvent evt)
         {
-            if (evt.Type != AttackType.Simple)
-                return;
-
             if (!_states.TryGetValue(evt.CharacterID, out var state))
                 return;
 
@@ -143,7 +152,7 @@ namespace Game.Core.Systems
         private void Register(Guid characterID)
         {
             if (!_states.ContainsKey(characterID))
-                _states[characterID] = new SimpleAttackHitDetectionState();
+                _states[characterID] = new HitDetectionState();
         }
 
         private void Unregister(Guid characterID)
@@ -151,8 +160,8 @@ namespace Game.Core.Systems
 
         public void Dispose()
         {
-            _gameEventsBus.Unsubscribe<OnAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Unsubscribe<OnAttackEndedEvent>(OnAttackEnded);
+            _gameEventsBus.Unsubscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
+            _gameEventsBus.Unsubscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
 
             _context.OnCharacterAdded   -= Register;
             _context.OnCharacterRemoved -= Unregister;

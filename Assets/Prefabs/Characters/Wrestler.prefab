@@ -102,11 +102,8 @@ MonoBehaviour:
   _rigidbody: {fileID: 4467332111100562444}
   _animator: {fileID: 838435628740739442}
   _hitbox: {fileID: 5141807331151570089}
-  _leftArmCollider: {fileID: 8224884988394157300}
-  _rightArmCollider: {fileID: 842784024305626095}
-  _leftLegCollider: {fileID: 4537102554122995096}
-  _rightLegCollider: {fileID: 1100757121859187827}
   _attackOrigin: {fileID: 33737958252472172}
+  _visualRoot: {fileID: 1978542816539998425}
   _aim: {fileID: 9167457441710057690}
 --- !u!1 &3399558559857233362
 GameObject:

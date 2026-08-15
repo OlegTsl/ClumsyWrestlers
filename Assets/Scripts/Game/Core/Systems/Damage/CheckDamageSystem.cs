@@ -7,6 +7,8 @@ namespace Game.Core.Systems
 {
     public class CheckDamageSystem : ICheckDamageSystem
     {
+        private const int InitialTargetCapacity = 8;
+
         private readonly GameEventsBus     _gameEventsBus;
         private readonly ICharacterContext _context;
         private readonly Dictionary<Guid, List<Guid>> _hitTargets = new();
@@ -18,10 +20,9 @@ namespace Game.Core.Systems
         {
             _gameEventsBus = events;
             _context       = context;
-            
-            _gameEventsBus.Subscribe<OnDamageEvent>(OnDamage);
-            _gameEventsBus.Subscribe<OnAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Subscribe<OnAttackEndedEvent>(OnAttackEnded);
+
+            _gameEventsBus.Subscribe<OnSimpleAttackHitDetectedEvent>(OnSimpleAttackHitDetected);
+            _gameEventsBus.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
 
             _context.OnCharacterAdded   += Register;
             _context.OnCharacterRemoved += Unregister;
@@ -29,10 +30,7 @@ namespace Game.Core.Systems
             RegisterExistingCharacters();
         }
 
-        private void OnAttackStarted(OnAttackStartedEvent evt)
-            => ClearTargets(evt.CharacterID);
-
-        private void OnAttackEnded(OnAttackEndedEvent evt)
+        private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
             => ClearTargets(evt.CharacterID);
 
         private void ClearTargets(Guid characterID)
@@ -41,21 +39,26 @@ namespace Game.Core.Systems
                 targets.Clear();
         }
 
-        private void OnDamage(OnDamageEvent evt)
+        private void OnSimpleAttackHitDetected(OnSimpleAttackHitDetectedEvent evt)
         {
-            var target = _context.GetModel(evt.TargetID);
-            if (target == null)
+            HitData hit = evt.Hit;
+            var target = _context.GetModel(hit.TargetID);
+            var attacker = _context.GetModel(hit.AttackerID);
+
+            if (target == null  || attacker == null ||
+                !target.Enabled || !attacker.Enabled)
+            {
+                return;
+            }
+
+            if (!_hitTargets.TryGetValue(hit.AttackerID, out var targets))
                 return;
 
-            if (!_hitTargets.TryGetValue(evt.AttackerID, out var targets))
-                return;
-
-            if (targets.Contains(evt.TargetID))
+            if (targets.Contains(hit.TargetID))
                 return;
 
             targets.Add(target.CharacterID);
-            _gameEventsBus.Publish(new OnApplyDamageEvent(
-                evt.AttackerID, evt.TargetID, evt.Force));
+            _gameEventsBus.Publish(new OnHitResolvedEvent(hit));
         }
 
         private void RegisterExistingCharacters()
@@ -70,7 +73,7 @@ namespace Game.Core.Systems
         private void Register(Guid characterID)
         {
             if (!_hitTargets.ContainsKey(characterID))
-                _hitTargets[characterID] = new List<Guid>();
+                _hitTargets[characterID] = new List<Guid>(InitialTargetCapacity);
         }
 
         private void Unregister(Guid characterID)
@@ -78,9 +81,8 @@ namespace Game.Core.Systems
 
         public void Dispose()
         {
-            _gameEventsBus.Unsubscribe<OnDamageEvent>(OnDamage);
-            _gameEventsBus.Unsubscribe<OnAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Unsubscribe<OnAttackEndedEvent>(OnAttackEnded);
+            _gameEventsBus.Unsubscribe<OnSimpleAttackHitDetectedEvent>(OnSimpleAttackHitDetected);
+            _gameEventsBus.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
 
             _context.OnCharacterAdded   -= Register;
             _context.OnCharacterRemoved -= Unregister;
