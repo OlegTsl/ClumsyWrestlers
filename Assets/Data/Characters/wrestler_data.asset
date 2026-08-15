@@ -27,14 +27,14 @@ MonoBehaviour:
     _simpleAttack:
       _animationClip: {fileID: -203655887218126122, guid: bcf3dfb881a7541bf88b2c036d527671,
         type: 3}
-      _animationSpeed: 1.5
+      _animationSpeed: 2
       _hitboxStartNormalized: 0.3
       _hitboxEndNormalized: 0.5
       _hitboxRange: 0.85
       _hitboxRadius: 0.3
       _handIkWeight: 0.75
       _handIkReach: 0.65
-      _knockbackForce: 5
+      _knockbackForce: 15
     _powerAttack:
       _animationClip: {fileID: -203655887218126122, guid: 567440027bca6455f884b7c9a7db1aa8,
         type: 3}
@@ -42,9 +42,9 @@ MonoBehaviour:
       _distance: 6
       _jumpHeight: 1.5
       _waveStartNormalized: 0.625
-      _waveRadius: 5
+      _waveRadius: 3
       _waveHeight: 5
-      _knockbackForce: 12
+      _knockbackForce: 10
     _hitReaction:
-      _leanAngle: 12
-      _leanDuration: 0.3
+      _leanAngle: 40
+      _leanDuration: 0.5

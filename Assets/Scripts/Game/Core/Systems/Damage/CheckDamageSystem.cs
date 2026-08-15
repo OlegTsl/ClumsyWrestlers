@@ -42,7 +42,8 @@ namespace Game.Core.Systems
         private void OnSimpleAttackHitDetected(OnSimpleAttackHitDetectedEvent evt)
         {
             HitData hit = evt.Hit;
-            var target = _context.GetModel(hit.TargetID);
+            
+            var target  = _context.GetModel(hit.TargetID);
             var attacker = _context.GetModel(hit.AttackerID);
 
             if (target == null  || attacker == null ||
