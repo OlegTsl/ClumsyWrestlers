@@ -1,13 +1,23 @@
+using System;
+using System.Collections.Generic;
+using Game.Core.GameEvents;
+
 namespace Game.Core.Systems
 {
     internal sealed class HitDetectionState
     {
+        private const int CExpectedTargetsPerAttack = 16;
+
+        public readonly HashSet<Guid> HitTargets = new(CExpectedTargetsPerAttack);
+
         public bool  IsActive          { get; set; }
+        public AttackType AttackType    { get; private set; }
         public float Elapsed           { get; set; }
         public float ActiveWindowStart { get; set; }
         public float ActiveWindowEnd   { get; set; }
         public float HitboxRange       { get; set; }
         public float HitboxRadius      { get; set; }
+        public float HitboxHeight      { get; private set; }
 
         public void BeginAttack(
             float activeWindowStart,
@@ -16,12 +26,24 @@ namespace Game.Core.Systems
             float hitboxRadius
         )
         {
+            Reset();
             IsActive          = true;
+            AttackType        = AttackType.Simple;
             Elapsed           = 0f;
             ActiveWindowStart = activeWindowStart;
             ActiveWindowEnd   = activeWindowEnd;
             HitboxRange       = hitboxRange;
             HitboxRadius      = hitboxRadius;
+        }
+
+        public void BeginPowerAttack(float activeWindowStart, float hitboxRadius, float hitboxHeight)
+        {
+            Reset();
+            IsActive          = true;
+            AttackType        = AttackType.Power;
+            ActiveWindowStart = activeWindowStart;
+            HitboxRadius      = hitboxRadius;
+            HitboxHeight      = hitboxHeight;
         }
 
         public void Reset()
@@ -32,6 +54,8 @@ namespace Game.Core.Systems
             ActiveWindowEnd   = 0f;
             HitboxRange       = 0f;
             HitboxRadius      = 0f;
+            HitboxHeight      = 0f;
+            HitTargets.Clear();
         }
     }
 }

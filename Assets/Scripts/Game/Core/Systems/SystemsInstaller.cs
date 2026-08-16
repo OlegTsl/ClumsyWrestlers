@@ -12,8 +12,7 @@ namespace Game.Core.Systems
             Container.BindInterfacesAndSelfTo<SlamAttackSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<SimpleAttackSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitDetectionSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<CheckDamageSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<ApplyDamageSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<DamageSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitReactionSystem>().AsSingle();
         }
     }

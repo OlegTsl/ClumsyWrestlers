@@ -70,6 +70,9 @@ namespace Game.Core.Systems
 
         private void OnHitResolved(OnHitResolvedEvent evt)
         {
+            if (evt.Hit.TargetType != HitObjectType.Character)
+                return;
+
             if (!_states.TryGetValue(evt.Hit.TargetID, out PowerAttackState state) || !state.IsAttacking)
                 return;
 

@@ -1,3 +1,4 @@
+using Game.Core.Level;
 using Game.Core.Systems;
 using Zenject;
 
@@ -10,12 +11,19 @@ namespace Game.Core.Round
         ILateTickable
     {
         private readonly DiContainer _rootContainer;
+        private readonly ILevelController _levelController;
 
         private DiContainer _roundContainer;
         private Kernel      _roundKernel;
 
-        public RoundSystemsScope(DiContainer rootContainer)
-            => _rootContainer = rootContainer;
+        public RoundSystemsScope(
+            DiContainer rootContainer,
+            ILevelController levelController
+        )
+        {
+            _rootContainer = rootContainer;
+            _levelController = levelController;
+        }
 
         public void StartRound()
         {
@@ -23,6 +31,7 @@ namespace Game.Core.Round
                 return;
 
             DiContainer roundContainer = _rootContainer.CreateSubContainer();
+            roundContainer.Bind<ILevelModel>().FromInstance(_levelController.Level);
             SystemsInstaller.Install(roundContainer);
             roundContainer.Bind<Kernel>().AsSingle();
             roundContainer.ResolveRoots();

@@ -9,5 +9,11 @@ namespace Game.Core.Extensions
             return Physics.OverlapCapsuleNonAlloc(start, end,
                 radius, results, layer, QueryTriggerInteraction.Collide);
         }
+
+        public static int OverlapSphere(Vector3 position, float radius, Collider[] results, int layer)
+        {
+            return Physics.OverlapSphereNonAlloc(position,
+                radius, results, layer, QueryTriggerInteraction.Ignore);
+        }
     }
 }

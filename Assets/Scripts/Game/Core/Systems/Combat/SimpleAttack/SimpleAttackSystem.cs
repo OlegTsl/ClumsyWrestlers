@@ -130,6 +130,9 @@ namespace Game.Core.Systems
 
         private void OnHitResolved(OnHitResolvedEvent evt)
         {
+            if (evt.Hit.TargetType != HitObjectType.Character)
+                return;
+
             if (_states.TryGetValue(evt.Hit.TargetID, out var state))
                 InterruptAttack(_context.GetModel(evt.Hit.TargetID), state);
         }

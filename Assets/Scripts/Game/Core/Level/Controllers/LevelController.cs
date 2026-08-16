@@ -9,8 +9,10 @@ namespace Game.Core.Level
     {
         private readonly IAssetManager _assetManager;
 
-        private ILevelView _level;
-        private string     _levelName;
+        private ILevelModel _level;
+        private string _levelName;
+
+        public ILevelModel Level => _level;
 
         public LevelController(
             IAssetManager assetManager
@@ -23,13 +25,14 @@ namespace Game.Core.Level
         {
             UnloadLevel();
 
-            _level = await _assetManager.LoadView<ILevelView>(address);
-            if (_level == null)
+            ILevelView view = await _assetManager.LoadView<ILevelView>(address);
+            if (view == null)
             {
                 Debug.LogError($"Failed to load level: {address}");
                 return;
             }
 
+            _level = new LevelModel(view);
             _levelName = address;
             Debug.Log($"Level loaded: {address}");
 
@@ -60,7 +63,7 @@ namespace Game.Core.Level
                 return;
             }
 
-            var spawnPoint = _level.GetCharacterSpawnPosition(isPlayer);
+            Transform spawnPoint = _level.GetCharacterSpawnPosition(isPlayer);
             model.SetPosition(spawnPoint.position);
             model.SetRotation(spawnPoint.rotation);
             model.SetEnabled(true);

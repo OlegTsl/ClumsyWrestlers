@@ -5,6 +5,8 @@ namespace Game.Core.Level
 {
     public interface ILevelController
     {
+        ILevelModel Level { get; }
+
         UniTask LoadLevel(string address);
         void UnloadLevel();
         bool IsLevelLoaded();

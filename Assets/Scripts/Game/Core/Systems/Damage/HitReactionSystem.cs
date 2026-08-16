@@ -61,6 +61,9 @@ namespace Game.Core.Systems
 
         private void OnHitResolved(OnHitResolvedEvent evt)
         {
+            if (evt.Hit.TargetType != HitObjectType.Character)
+                return;
+
             ICharacterModel target = _context.GetModel(evt.Hit.TargetID);
             if (target == null || !target.Enabled ||
                 !_states.TryGetValue(evt.Hit.TargetID, out HitReactionState state))
@@ -75,7 +78,7 @@ namespace Game.Core.Systems
                 return;
             }
 
-            Vector3 direction = evt.Hit.Direction;
+            Vector3 direction = evt.Hit.Force;
             direction.y = 0f;
 
             if (direction.sqrMagnitude <= CMinDirectionSqrMagnitude)
