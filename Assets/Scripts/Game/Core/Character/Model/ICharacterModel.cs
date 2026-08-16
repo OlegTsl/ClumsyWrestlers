@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Core.Character
 {
-    public interface ICharacterModel : IVisualLean, IDisposable
+    public interface ICharacterModel : IDisposable
     {
         void SetPosition(Vector3 position);
         void SetRotation(Quaternion rotation);
@@ -18,6 +18,7 @@ namespace Game.Core.Character
         void SetAimEnabled(bool enabled);
         void SetAimPositions(Vector3[] positions);
         void SetAimPositionCount(int count);
+        void SetVisualLean(Quaternion rotation);
 
         Guid          CharacterID     { get; }
         CharacterData Data            { get; }

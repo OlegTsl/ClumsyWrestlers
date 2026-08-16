@@ -41,8 +41,8 @@ namespace Game.Core.Character
         public void SetRotation(Quaternion rotation)
             => _view.SetRotation(rotation);
 
-        public void SetVisualLean(Quaternion localRotation)
-            => _view.SetVisualLean(localRotation);
+        public void SetVisualLean(Quaternion rotation)
+            => _view.SetVisualLean(rotation);
 
         public void SetEnabled(bool enabled)
         {

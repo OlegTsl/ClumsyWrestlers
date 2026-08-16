@@ -9,7 +9,7 @@ namespace Game.Core.Systems
 {
     public sealed class SlamAttackSystem : ISlamAttackSystem, IFixedTickable
     {
-        private const float MinimumSqrMagnitude = 0.0001f;
+        private const float CMinimumSqrMagnitude = 0.0001f;
 
         private readonly GameEventsBus     _events;
         private readonly ICharacterContext _context;
@@ -59,46 +59,22 @@ namespace Game.Core.Systems
                 return;
             }
 
-            PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
-            if (settings == null)
-                return;
-
             state.Begin();
 
             _events.Publish(new OnForceEvent(
-                attacker.CharacterID,
-                CalculateLaunchVelocity(attacker, settings)));
+                attacker.CharacterID, CalculateLaunchVelocity(attacker)));
 
-            if (settings.WaveStartTime <= 0f)
+            if (attacker.Data.Combat.PowerAttack.WaveStartTime <= 0f)
             {
-                ApplyWave(attacker, settings);
+                ApplyWave(attacker);
                 state.MarkWaveApplied();
             }
         }
 
         private void OnPowerAttackEnded(OnPowerAttackEndedEvent evt)
         {
-            if (!_states.TryGetValue(evt.CharacterID, out SlamAttackState state) ||
-                !state.IsActive)
-            {
-                return;
-            }
-
-            if (evt.Reason == PowerAttackEndReason.Completed &&
-                !state.IsWaveApplied)
-            {
-                ICharacterModel attacker = _context.GetModel(evt.CharacterID);
-                PowerAttackSettings settings =
-                    attacker?.Data.Combat.PowerAttack;
-
-                if (attacker != null && attacker.Enabled && settings != null)
-                {
-                    ApplyWave(attacker, settings);
-                    state.MarkWaveApplied();
-                }
-            }
-
-            state.End();
+            if (_states.TryGetValue(evt.CharacterID, out SlamAttackState state) && state.IsActive)
+                state.End();            
         }
 
         public void FixedTick()
@@ -120,10 +96,7 @@ namespace Game.Core.Systems
             }
         }
 
-        private void UpdateSlam(
-            ICharacterModel attacker,
-            SlamAttackState state
-        )
+        private void UpdateSlam(ICharacterModel attacker, SlamAttackState state)
         {
             PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
             if (settings == null)
@@ -133,23 +106,25 @@ namespace Game.Core.Systems
             }
 
             state.Elapsed += Time.fixedDeltaTime;
+
             if (!state.IsWaveApplied && state.Elapsed >= settings.WaveStartTime)
             {
-                ApplyWave(attacker, settings);
+                ApplyWave(attacker);
                 state.MarkWaveApplied();
             }
         }
 
-        private static Vector3 CalculateLaunchVelocity(ICharacterModel attacker, PowerAttackSettings settings)
+        private static Vector3 CalculateLaunchVelocity(ICharacterModel attacker)
         {
-            Vector3 direction = attacker.Forward;
+            PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
+            Vector3 direction            = attacker.Forward;
             direction.y = 0f;
 
-            if (direction.sqrMagnitude <= MinimumSqrMagnitude)
+            if (direction.sqrMagnitude <= CMinimumSqrMagnitude)
                 return Vector3.zero;
 
             direction.Normalize();
-
+            
             float gravity = Mathf.Abs(Physics.gravity.y);
             if (gravity <= Mathf.Epsilon)
                 return direction * settings.Distance;
@@ -161,9 +136,11 @@ namespace Game.Core.Systems
             return direction * horizontalVelocity + Vector3.up * verticalVelocity;
         }
 
-        private void ApplyWave(ICharacterModel attacker, PowerAttackSettings settings)
+        private void ApplyWave(ICharacterModel attacker)
         {
-            Vector3 attackerPosition = attacker.Position;
+            Vector3 attackerPosition     = attacker.Position;
+            PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
+
             float radiusSqr = settings.WaveRadius * settings.WaveRadius;
             
             var characters = _context.AllCharacters;
@@ -181,7 +158,7 @@ namespace Game.Core.Systems
                 if (hitDirection.sqrMagnitude > radiusSqr)
                     continue;
 
-                if (hitDirection.sqrMagnitude <= MinimumSqrMagnitude)
+                if (hitDirection.sqrMagnitude <= CMinimumSqrMagnitude)
                 {
                     hitDirection   = attacker.Forward;
                     hitDirection.y = 0f;

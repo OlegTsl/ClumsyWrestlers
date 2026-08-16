@@ -21,7 +21,7 @@ namespace Game.Core.Systems
             _gameEventsBus = events;
             _context       = context;
 
-            _gameEventsBus.Subscribe<OnSimpleAttackHitDetectedEvent>(OnSimpleAttackHitDetected);
+            _gameEventsBus.Subscribe<OnHitDetectedEvent>(OnHitDetected);
             _gameEventsBus.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
 
             _context.OnCharacterAdded   += Register;
@@ -39,11 +39,11 @@ namespace Game.Core.Systems
                 targets.Clear();
         }
 
-        private void OnSimpleAttackHitDetected(OnSimpleAttackHitDetectedEvent evt)
+        private void OnHitDetected(OnHitDetectedEvent evt)
         {
             HitData hit = evt.Hit;
             
-            var target  = _context.GetModel(hit.TargetID);
+            var target   = _context.GetModel(hit.TargetID);
             var attacker = _context.GetModel(hit.AttackerID);
 
             if (target == null  || attacker == null ||
@@ -82,7 +82,7 @@ namespace Game.Core.Systems
 
         public void Dispose()
         {
-            _gameEventsBus.Unsubscribe<OnSimpleAttackHitDetectedEvent>(OnSimpleAttackHitDetected);
+            _gameEventsBus.Unsubscribe<OnHitDetectedEvent>(OnHitDetected);
             _gameEventsBus.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
 
             _context.OnCharacterAdded   -= Register;

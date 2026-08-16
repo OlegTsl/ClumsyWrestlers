@@ -9,47 +9,32 @@ namespace Game.Core.GameEvents
         Power
     }
 
-    public readonly struct OnPowerAttackRequestedEvent : ICharacterEvent
+    public readonly struct OnPowerAttackRequestedEvent
     {
         public readonly Guid CharacterID { get; }
-
         public OnPowerAttackRequestedEvent(Guid characterID)
             => CharacterID = characterID;
     }
 
-    public readonly struct OnPowerAttackStartedEvent : ICharacterEvent
+    public readonly struct OnPowerAttackStartedEvent
     {
-        public Guid CharacterID { get; }
+        public Guid          CharacterID   { get; }
         public AnimationClip AnimationClip { get; }
 
         public OnPowerAttackStartedEvent(
-            Guid characterID,
+            Guid          characterID,
             AnimationClip animationClip
         )
         {
-            CharacterID = characterID;
+            CharacterID   = characterID;
             AnimationClip = animationClip;
         }
     }
 
-    public enum PowerAttackEndReason
-    {
-        Completed,
-        Interrupted
-    }
-
-    public readonly struct OnPowerAttackEndedEvent : ICharacterEvent
+    public readonly struct OnPowerAttackEndedEvent
     {
         public Guid CharacterID { get; }
-        public PowerAttackEndReason Reason { get; }
-
-        public OnPowerAttackEndedEvent(
-            Guid characterID,
-            PowerAttackEndReason reason
-        )
-        {
-            CharacterID = characterID;
-            Reason = reason;
-        }
+        public OnPowerAttackEndedEvent(Guid characterID)
+            => CharacterID = characterID;
     }
 }

@@ -75,7 +75,7 @@ namespace Game.Core.Systems
 
             ICharacterModel model = _context.GetModel(evt.Hit.TargetID);
             if (model != null)
-                EndPowerAttack(model, state, PowerAttackEndReason.Interrupted);
+                EndPowerAttack(model, state);
         }
 
         public void FixedTick()
@@ -89,7 +89,7 @@ namespace Game.Core.Systems
 
                 if (!model.Enabled)
                 {
-                    EndPowerAttack(model, state, PowerAttackEndReason.Interrupted);
+                    EndPowerAttack(model, state);
                     continue;
                 }
 
@@ -112,19 +112,13 @@ namespace Game.Core.Systems
 
         private void UpdatePowerAttack(ICharacterModel model, PowerAttackState state)
         {
-            PowerAttackSettings settings = model.Data.Combat.PowerAttack;
-            if (settings == null || settings.Duration <= 0f)
-            {
-                EndPowerAttack(model, state, PowerAttackEndReason.Interrupted);
-                return;
-            }
-
             state.Elapsed += Time.fixedDeltaTime;
-            if (state.Elapsed >= settings.Duration)
-                EndPowerAttack(model, state, PowerAttackEndReason.Completed);
+
+            if (state.Elapsed >= model.Data.Combat.PowerAttack.Duration)
+                EndPowerAttack(model, state);
         }
 
-        private void EndPowerAttack(ICharacterModel model, PowerAttackState state, PowerAttackEndReason reason)
+        private void EndPowerAttack(ICharacterModel model, PowerAttackState state)
         {
             if (!state.IsAttacking)
                 return;
@@ -133,7 +127,7 @@ namespace Game.Core.Systems
             model.SetMovable(true);
 
             _events.Publish(new OnPowerAttackEndedEvent(
-                model.CharacterID, reason));
+                model.CharacterID));
         }
 
         public void Dispose()

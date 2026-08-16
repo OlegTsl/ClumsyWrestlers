@@ -24,8 +24,9 @@ namespace Game.Core.Systems
         private void ApplyDamage(OnHitResolvedEvent evt)
         {
             HitData hit = evt.Hit;
+            
             var attackerModel = _context.GetModel(hit.AttackerID);
-            var targetModel = _context.GetModel(hit.TargetID);
+            var targetModel   = _context.GetModel(hit.TargetID);
 
             if (attackerModel == null || targetModel == null ||
                 !attackerModel.Enabled || !targetModel.Enabled)
@@ -35,9 +36,7 @@ namespace Game.Core.Systems
 
             float force = GetKnockbackForce(hit, attackerModel);
             if (force > 0f)
-            {
                 ApplyForce(hit, force);
-            }
 
             _gameEventsBus.Publish(new OnHitEvent(hit.TargetID));
         }
@@ -47,9 +46,7 @@ namespace Game.Core.Systems
             if (hit.AttackType == AttackType.Power)
                 return attacker.Data.Combat.PowerAttack?.KnockbackForce ?? 0f;
 
-            SimpleAttackSettings settings =
-                attacker.Data.Combat.SimpleAttack;
-            return settings?.KnockbackForce ?? 0f;
+            return attacker.Data.Combat.SimpleAttack?.KnockbackForce ?? 0f;
         }
 
         private void ApplyForce(HitData hit, float force)
@@ -59,8 +56,7 @@ namespace Game.Core.Systems
             direction.Normalize();
 
             _gameEventsBus.Publish(new OnForceEvent(
-                hit.TargetID,
-                direction * force));
+                hit.TargetID, direction * force));
         }
 
         public void Dispose()

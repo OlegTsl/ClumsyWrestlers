@@ -1,4 +1,3 @@
-using System;
 using Game.Common.Views;
 using UnityEngine;
 
@@ -16,7 +15,7 @@ namespace Game.Core.Character
         void SetPosition(Vector3 position);
         Vector3 GetPosition();
         void SetRotation(Quaternion rotation);
-        void SetVisualLean(Quaternion localRotation);
+        void SetVisualLean(Quaternion rotation);
 
         void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
         void SetAnimatorBool(int id, bool value);

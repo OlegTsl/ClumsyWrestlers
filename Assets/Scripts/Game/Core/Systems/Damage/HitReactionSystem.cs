@@ -9,8 +9,8 @@ namespace Game.Core.Systems
 {
     public sealed class HitReactionSystem : IHitReactionSystem, ILateTickable
     {
-        private const float PeakTimeNormalized = 0.25f;
-        private const float MinDirectionSqrMagnitude = 0.0001f;
+        private const float CPeakTimeNormalized       = 0.25f;
+        private const float CMinDirectionSqrMagnitude = 0.0001f;
 
         private readonly GameEventsBus     _events;
         private readonly ICharacterContext _context;
@@ -42,7 +42,10 @@ namespace Game.Core.Systems
         }
 
         private void Register(Guid characterId)
-            => _states[characterId] = new HitReactionState();
+        {
+            if (!_states.ContainsKey(characterId))
+                _states[characterId] = new HitReactionState();
+        }
 
         private void Unregister(Guid characterId)
         {
@@ -74,22 +77,20 @@ namespace Game.Core.Systems
 
             Vector3 direction = evt.Hit.Direction;
             direction.y = 0f;
-            if (direction.sqrMagnitude <= MinDirectionSqrMagnitude)
-            {
+
+            if (direction.sqrMagnitude <= CMinDirectionSqrMagnitude)
                 return;
-            }
 
             direction.Normalize();
             Vector3 worldAxis = Vector3.Cross(Vector3.up, direction);
             Vector3 localAxis = target.InverseTransformDirection(worldAxis);
 
-            state.Active = true;
-            state.Elapsed = 0f;
-            state.Duration = settings.LeanDuration;
-            state.StartRotation = state.CurrentRotation;
+            state.Active         = true;
+            state.Elapsed        = 0f;
+            state.Duration       = settings.LeanDuration;
+            state.StartRotation  = state.CurrentRotation;
             state.TargetRotation = Quaternion.AngleAxis(
-                settings.LeanAngle,
-                localAxis);
+                settings.LeanAngle, localAxis);
         }
 
         public void LateTick()
@@ -98,15 +99,11 @@ namespace Game.Core.Systems
             {
                 HitReactionState state = pair.Value;
                 if (!state.Active)
-                {
                     continue;
-                }
 
                 ICharacterModel target = _context.GetModel(pair.Key);
                 if (target == null)
-                {
                     continue;
-                }
 
                 if (!target.Enabled)
                 {
@@ -115,53 +112,40 @@ namespace Game.Core.Systems
                 }
 
                 state.Elapsed += Time.deltaTime;
-                float normalizedTime = Mathf.Clamp01(
-                    state.Elapsed / state.Duration);
+                float normalizedTime = Mathf.Clamp01(state.Elapsed / state.Duration);
 
-                if (normalizedTime < PeakTimeNormalized)
+                if (normalizedTime < CPeakTimeNormalized)
                 {
                     float leanProgress = Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        normalizedTime / PeakTimeNormalized);
+                        0f, 1f, normalizedTime / CPeakTimeNormalized);
+
                     state.CurrentRotation = Quaternion.SlerpUnclamped(
-                        state.StartRotation,
-                        state.TargetRotation,
-                        leanProgress);
+                        state.StartRotation, state.TargetRotation, leanProgress);
                 }
                 else
                 {
                     float recoverProgress = Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        (normalizedTime - PeakTimeNormalized) /
-                        (1f - PeakTimeNormalized));
+                        0f, 1f, (normalizedTime - CPeakTimeNormalized) / (1f - CPeakTimeNormalized));
+                    
                     state.CurrentRotation = Quaternion.SlerpUnclamped(
-                        state.TargetRotation,
-                        Quaternion.identity,
-                        recoverProgress);
+                        state.TargetRotation, Quaternion.identity, recoverProgress);
                 }
 
                 target.SetVisualLean(state.CurrentRotation);
 
                 if (normalizedTime >= 1f)
-                {
                     Reset(target, state);
-                }
             }
         }
 
-        private static void Reset(
-            IVisualLean target,
-            HitReactionState state
-        )
+        private static void Reset(ICharacterModel model, HitReactionState state)
         {
-            state.Active = false;
-            state.Elapsed = 0f;
+            state.Active          = false;
+            state.Elapsed         = 0f;
             state.CurrentRotation = Quaternion.identity;
-            state.StartRotation = Quaternion.identity;
-            state.TargetRotation = Quaternion.identity;
-            target.SetVisualLean(Quaternion.identity);
+            state.StartRotation   = Quaternion.identity;
+            state.TargetRotation  = Quaternion.identity;
+            model.SetVisualLean(Quaternion.identity);
         }
 
         public void Dispose()

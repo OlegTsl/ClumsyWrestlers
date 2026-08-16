@@ -2,40 +2,34 @@ using System;
 
 namespace Game.Core.GameEvents
 {
-    public readonly struct OnSimpleAttackInputEvent : ICharacterEvent
+    public readonly struct OnSimpleAttackInputEvent
     {
         public Guid CharacterID { get; }
-        public bool IsPressed { get; }
+        public bool IsPressed   { get; }
 
         public OnSimpleAttackInputEvent(Guid characterID, bool isPressed)
         {
             CharacterID = characterID;
-            IsPressed = isPressed;
+            IsPressed   = isPressed;
         }
     }
 
-    public readonly struct OnSimpleAttackStartedEvent : ICharacterEvent
+    public readonly struct OnSimpleAttackStartedEvent
     {
         public Guid CharacterID { get; }
-        public bool IsMirrored { get; }
+        public bool IsMirrored  { get; }
 
-        public OnSimpleAttackStartedEvent(
-            Guid characterID,
-            bool isMirrored
-        )
+        public OnSimpleAttackStartedEvent(Guid characterID, bool isMirrored)
         {
             CharacterID = characterID;
-            IsMirrored = isMirrored;
+            IsMirrored  = isMirrored;
         }
     }
 
-    public readonly struct OnSimpleAttackEndedEvent : ICharacterEvent
+    public readonly struct OnSimpleAttackEndedEvent
     {
         public Guid CharacterID { get; }
-
         public OnSimpleAttackEndedEvent(Guid characterID)
-        {
-            CharacterID = characterID;
-        }
+            => CharacterID = characterID;
     }
 }

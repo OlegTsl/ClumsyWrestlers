@@ -107,7 +107,7 @@ namespace Game.Core.Systems
 
                 hitDirection.Normalize();
 
-                _gameEventsBus.Publish(new OnSimpleAttackHitDetectedEvent(
+                _gameEventsBus.Publish(new OnHitDetectedEvent(
                     attacker.CharacterID, target.CharacterID, hitDirection));
             }
         }

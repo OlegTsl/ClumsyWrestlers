@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Core.GameEvents
 {
-    public readonly struct OnMoveEvent : ICharacterEvent
+    public readonly struct OnMoveEvent
     {
         public readonly Guid    CharacterID { get; }
         public readonly Vector3 Direction   { get; }
@@ -15,14 +15,14 @@ namespace Game.Core.GameEvents
         }
     }
 
-    public readonly struct OnJumpEvent : ICharacterEvent
+    public readonly struct OnJumpEvent
     {
         public readonly Guid CharacterID { get; }
         public OnJumpEvent(Guid characterID)
             => CharacterID = characterID;
     }
 
-    public readonly struct OnForceEvent : ICharacterEvent
+    public readonly struct OnForceEvent
     {
         public readonly Guid    CharacterID { get; }
         public readonly Vector3 Force       { get; }

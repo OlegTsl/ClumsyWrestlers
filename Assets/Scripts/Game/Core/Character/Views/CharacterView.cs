@@ -55,8 +55,8 @@ namespace Game.Core.Character
         public void SetRotation(Quaternion rotation)
             => transform.rotation = rotation;
 
-        public void SetVisualLean(Quaternion localRotation)
-            => _visualRoot.localRotation = _visualRootBaseRotation * localRotation;
+        public void SetVisualLean(Quaternion rotation)
+            => _visualRoot.localRotation = _visualRootBaseRotation * rotation;
 
         public void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime)
             => _animator.SetFloat(id, value, dampTime, deltaTime);
