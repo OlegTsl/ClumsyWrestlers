@@ -1,4 +1,5 @@
 using Game.Common.Views;
+using Game.Core.Bots;
 using UnityEngine;
 
 namespace Game.Core.Character
@@ -9,6 +10,7 @@ namespace Game.Core.Character
         Collider Hitbox { get; }
         Rigidbody Rigidbody { get; }
         Transform Transform { get; }
+        IBotNavigationAgent BotNavigationAgent { get; }
 
         CharacterPhysicsSnapshot CapturePhysicsSnapshot();
         void SetVelocity(Vector3 velocity);

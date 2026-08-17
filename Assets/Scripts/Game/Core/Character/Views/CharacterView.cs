@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Game.Core.Data;
+using Game.Core.Bots;
 using UnityEngine;
 
 namespace Game.Core.Character
@@ -15,6 +16,7 @@ namespace Game.Core.Character
         [SerializeField] private Transform _attackOrigin;
         [SerializeField] private Transform _visualRoot;
         [SerializeField] private LineRenderer _aim;
+        [SerializeField] private BotNavigationView _botNavigation;
 
         private readonly HashSet<Collider> _groundColliders = new(4);
 
@@ -29,6 +31,7 @@ namespace Game.Core.Character
         public Collider Hitbox => _hitbox;
         public Rigidbody Rigidbody => _rigidbody;
         public Transform Transform => transform;
+        public IBotNavigationAgent BotNavigationAgent => _botNavigation;
 
         private void Awake()
         {

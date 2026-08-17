@@ -1,4 +1,5 @@
 using Game.Core.Entities;
+using Game.Core.Teams;
 using UnityEngine;
 using EntityId = Game.Core.Entities.EntityId;
 
@@ -13,10 +14,12 @@ namespace Game.Core.Character
         ICharacterAimState,
         ICharacterMovementRuntimeState,
         ICharacterCombatRuntimeState,
-        ICharacterPresentationState
+        ICharacterPresentationState,
+        ICharacterTeamState
     {
         public EntityId CharacterID { get; }
         public CharacterData Data { get; }
+        public TeamId TeamId { get; }
         public Vector3 Position { get; private set; }
         public Quaternion Rotation { get; private set; }
         public Vector3 Velocity { get; private set; }
@@ -29,10 +32,14 @@ namespace Game.Core.Character
         public Vector3 Forward
             => Rotation * Vector3.forward;
 
-        public CharacterModel(EntityId characterId, CharacterData data)
+        public CharacterModel(
+            EntityId characterId,
+            CharacterData data,
+            TeamId teamId)
         {
             CharacterID = characterId;
             Data = data;
+            TeamId = teamId;
             Rotation = Quaternion.identity;
         }
 

@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
 using Game.Core.Entities;
+using Game.Core.Teams;
 
 namespace Game.Core.Character
 {
@@ -27,13 +28,19 @@ namespace Game.Core.Character
 
         public UniTask<ICharacterRuntime> BuildCharacterAsync(
             string address,
+            TeamId teamId,
             CancellationToken cancellationToken
         )
-            => BuildCharacterAsync(address, _entityIdAllocator.Allocate(), cancellationToken);
+            => BuildCharacterAsync(
+                address,
+                _entityIdAllocator.Allocate(),
+                teamId,
+                cancellationToken);
 
         public async UniTask<ICharacterRuntime> BuildCharacterAsync(
             string address,
             EntityId characterId,
+            TeamId teamId,
             CancellationToken cancellationToken
         )
         {
@@ -42,6 +49,13 @@ namespace Game.Core.Character
                 throw new System.ArgumentException(
                     "Character id must be valid.",
                     nameof(characterId));
+            }
+
+            if (!teamId.IsValid)
+            {
+                throw new System.ArgumentException(
+                    "Team id must be valid.",
+                    nameof(teamId));
             }
 
             IViewLease<CharacterView> viewLease = null;
@@ -56,7 +70,7 @@ namespace Game.Core.Character
                 CharacterView view = viewLease.View;
                 view.Hide();
 
-                CharacterModel model = new(characterId, view.Data);
+                CharacterModel model = new(characterId, view.Data, teamId);
                 model.GetState<ICharacterPhysicsState>()
                     .SynchronizePhysics(view.CapturePhysicsSnapshot());
 

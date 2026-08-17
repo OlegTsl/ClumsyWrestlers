@@ -1,3 +1,4 @@
+using Game.Core.Bots;
 using Zenject;
 
 namespace Game.Core.Character
@@ -9,6 +10,7 @@ namespace Game.Core.Character
             Container.BindInterfacesAndSelfTo<CharacterContext>().AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterViewContext>().AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterBuilder>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BotDecisionAgentFactory>().AsSingle();
         }
     }
 }

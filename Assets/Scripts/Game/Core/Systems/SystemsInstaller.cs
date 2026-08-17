@@ -1,4 +1,3 @@
-using Game.Core.Bots;
 using Zenject;
 
 namespace Game.Core.Systems
@@ -8,7 +7,10 @@ namespace Game.Core.Systems
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<CharacterPhysicsReadSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<BotDecisionScheduler>().AsSingle();
+            Container.BindInterfacesAndSelfTo<ArenaEliminationSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TeamVictorySystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CharacterEliminationPresentationSystem>()
+                .AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterCommandDispatchSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterControlStateRegistry>()
                 .AsSingle();
@@ -35,7 +37,8 @@ namespace Game.Core.Systems
             Container.BindInterfacesAndSelfTo<SlamAttackSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<SimpleAttackSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitDetectionSystem>().AsSingle();
-            Container.BindInterfacesAndSelfTo<DamageSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<HitValidationSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<HitResolutionSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitReactionSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<LevelEntityTickSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<LevelCollisionSystem>().AsSingle();
@@ -45,7 +48,8 @@ namespace Game.Core.Systems
             Container.BindInterfacesAndSelfTo<CharacterPhysicsWriteSystem>().AsSingle();
 
             Container.BindExecutionOrder<CharacterPhysicsReadSystem>(-400);
-            Container.BindExecutionOrder<BotDecisionScheduler>(-350);
+            Container.BindExecutionOrder<ArenaEliminationSystem>(-375);
+            Container.BindExecutionOrder<TeamVictorySystem>(-370);
             Container.BindExecutionOrder<CharacterCommandDispatchSystem>(-300);
             Container.BindExecutionOrder<MovementSystem>(0);
             Container.BindExecutionOrder<SimpleAttackSystem>(10);

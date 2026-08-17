@@ -54,7 +54,10 @@ namespace Game.Core.Level
             }
         }
 
-        public void SpawnCharacter(ICharacterModel model, bool isPlayer)
+        public void SpawnCharacter(
+            ICharacterModel model,
+            bool isPlayerTeam,
+            int spawnIndex)
         {
             if (Level == null)
             {
@@ -69,20 +72,22 @@ namespace Game.Core.Level
             }
 
             LevelSpawnPoint spawnPoint =
-                _spawnPointProvider.GetCharacterSpawnPoint(isPlayer);
+                _spawnPointProvider.GetCharacterSpawnPoint(
+                    isPlayerTeam,
+                    spawnIndex);
             ICharacterTransformState transform =
                 model.GetState<ICharacterTransformState>();
             ICharacterPhysicsState physics =
                 model.GetState<ICharacterPhysicsState>();
             ICharacterActivityState activity =
                 model.GetState<ICharacterActivityState>();
+            view.Show();
             view.SetPosition(spawnPoint.Position);
             view.SetRotation(spawnPoint.Rotation);
             transform.SetPosition(spawnPoint.Position);
             transform.SetRotation(spawnPoint.Rotation);
             physics.SetVelocity(UnityEngine.Vector3.zero);
             activity.SetEnabled(true);
-            view.Show();
         }
 
         public void UnloadLevel()

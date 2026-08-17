@@ -12,6 +12,7 @@ namespace Game.Core.Level
         ILevelEntityRegistry,
         ILevelFixedTickSource,
         ILevelSpawnPointProvider,
+        ILevelArenaData,
         ILevelImpactSettingsRegistry,
         ILevelCollisionBuffer,
         ILevelCollisionSink
@@ -33,6 +34,8 @@ namespace Game.Core.Level
         public IReadOnlyList<ILevelEntityView> LevelEntities => _view.LevelEntities;
         public IReadOnlyList<ILevelEntityFixedTickView> FixedTickEntities
             => _fixedTickEntities;
+        public Vector3 SafePosition => _view.SafePosition;
+        public float EliminationHeight => _view.EliminationHeight;
 
         public LevelModel(ILevelView view)
         {
@@ -49,8 +52,10 @@ namespace Game.Core.Level
             }
         }
 
-        public LevelSpawnPoint GetCharacterSpawnPoint(bool isPlayer)
-            => _view.GetCharacterSpawnPoint(isPlayer);
+        public LevelSpawnPoint GetCharacterSpawnPoint(
+            bool isPlayerTeam,
+            int spawnIndex)
+            => _view.GetCharacterSpawnPoint(isPlayerTeam, spawnIndex);
 
         public bool TryGetEntityId(Collider hitbox, out EntityId entityId)
             => _colliderIds.TryGetValue(hitbox, out entityId);

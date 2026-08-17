@@ -40,6 +40,8 @@ namespace Game.Core.Round
                 .FromInstance((ILevelImpactSettingsRegistry)level);
             roundContainer.Bind<ILevelCollisionBuffer>()
                 .FromInstance((ILevelCollisionBuffer)level);
+            roundContainer.Bind<ILevelArenaData>()
+                .FromInstance((ILevelArenaData)level);
             SystemsInstaller.Install(roundContainer);
             roundContainer.Bind<Kernel>().AsSingle();
             roundContainer.ResolveRoots();

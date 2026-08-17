@@ -5,6 +5,8 @@ using Game.Core.Level;
 using Game.Core.Round;
 using Game.Core.Entities;
 using Game.Core.Commands;
+using Game.Core.Teams;
+using Game.Core.Bots;
 using Zenject;
 
 namespace Game.Core.Installers
@@ -18,6 +20,9 @@ namespace Game.Core.Installers
             Container.BindInterfacesAndSelfTo<EntityIdAllocator>().AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterCommandBuffer>().AsSingle();
             Container.BindInterfacesAndSelfTo<SimulationClock>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TeamRelations>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BotDecisionScheduler>().AsSingle();
+            Container.BindExecutionOrder<BotDecisionScheduler>(-350);
 
             GameEventsInstaller.Install(Container);
             LevelInstaller.Install(Container);

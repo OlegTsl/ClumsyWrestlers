@@ -11,6 +11,9 @@ namespace Game.Core.Level
         bool IsLevelLoaded { get; }
         UniTask LoadLevelAsync(string address, CancellationToken cancellationToken);
         void UnloadLevel();
-        void SpawnCharacter(ICharacterModel model, bool isPlayer);
+        void SpawnCharacter(
+            ICharacterModel model,
+            bool isPlayerTeam,
+            int spawnIndex);
     }
 }
