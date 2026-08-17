@@ -23,7 +23,9 @@ Unity 3D game
 - Systems implement IDisposable and unsubscribe from events in Dispose().
 
 ### Project-Specific Rules
-- Unity Version: 2022.3.52f1
+- Unity Version: 6000.5.8f1
+- When a file imports `UnityEngine` and uses the project entity identifier, alias it as
+  `using EntityId = Game.Core.Entities.EntityId;` to avoid the Unity 6 `UnityEngine.EntityId` conflict.
 - Architecture: ECS-like (Systems + Context)
 - DI Framework: Zenject (constructor injection only, [Inject] only for MonoBehaviours)
 - Async: UniTask (NO coroutines, NO Task)

@@ -1,6 +1,7 @@
 using Game.Core.Character;
 using Game.Core.Entities;
 using UnityEngine;
+using EntityId = Game.Core.Entities.EntityId;
 
 namespace Game.Core.GameEvents
 {

@@ -7,6 +7,7 @@ using Game.Core.Level;
 using Game.Core.Level.Entities;
 using UnityEngine;
 using Zenject;
+using EntityId = Game.Core.Entities.EntityId;
 
 namespace Game.Core.Systems
 {

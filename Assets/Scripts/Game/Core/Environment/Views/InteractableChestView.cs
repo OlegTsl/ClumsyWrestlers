@@ -35,7 +35,7 @@ namespace Game.Core.Environment
         private void Awake()
         {
             _registeredHitboxes[0] = _hitbox;
-            _rigidbody.drag = _data.ForceDamping;
+            _rigidbody.linearDamping = _data.ForceDamping;
         }
 
         public void FixedTick()
@@ -45,7 +45,7 @@ namespace Game.Core.Environment
                 return;
             }
 
-            Vector3 velocity = _rigidbody.velocity;
+            Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = 0f;
 
             if (!_hasPredictedVelocity || Time.fixedTime > _predictedAtFixedTime)
@@ -67,7 +67,7 @@ namespace Game.Core.Environment
                 return;
             }
 
-            Vector3 velocity = _rigidbody.velocity;
+            Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = 0f;
 
             Vector3 impactVelocity = _lastHorizontalVelocity.sqrMagnitude > velocity.sqrMagnitude
@@ -99,7 +99,7 @@ namespace Game.Core.Environment
             _armedAtFixedTime = Time.fixedTime;
             _predictedAtFixedTime = Time.fixedTime;
 
-            Vector3 predictedVelocity = _rigidbody.velocity + impulse / _rigidbody.mass;
+            Vector3 predictedVelocity = _rigidbody.linearVelocity + impulse / _rigidbody.mass;
             predictedVelocity.y = 0f;
 
             _lastHorizontalVelocity = predictedVelocity;
@@ -110,10 +110,10 @@ namespace Game.Core.Environment
         public void DampenAfterImpact(Vector3 impactVelocity)
         {
             float retention = 1f / (1f + _data.ForceDamping);
-            Vector3 velocity = _rigidbody.velocity;
+            Vector3 velocity = _rigidbody.linearVelocity;
             velocity.x = impactVelocity.x * retention;
             velocity.z = impactVelocity.z * retention;
-            _rigidbody.velocity = velocity;
+            _rigidbody.linearVelocity = velocity;
 
             _lastHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
             _hasPredictedVelocity = false;

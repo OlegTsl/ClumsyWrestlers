@@ -4,6 +4,7 @@ using Game.Core.Entities;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
+using EntityId = Game.Core.Entities.EntityId;
 
 namespace Game.Core.Systems
 {

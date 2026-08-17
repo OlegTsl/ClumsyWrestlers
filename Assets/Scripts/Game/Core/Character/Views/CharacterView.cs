@@ -54,7 +54,7 @@ namespace Game.Core.Character
             => new(
                 _rigidbody.position,
                 _rigidbody.rotation,
-                _rigidbody.velocity,
+                _rigidbody.linearVelocity,
                 _attackOrigin.position,
                 _groundColliders.Count > 0);
 
@@ -68,7 +68,7 @@ namespace Game.Core.Character
             => _rigidbody.MoveRotation(rotation);
 
         public void SetVelocity(Vector3 velocity)
-            => _rigidbody.velocity = velocity;
+            => _rigidbody.linearVelocity = velocity;
 
         public void SetVisualLean(Quaternion rotation)
             => _visualRoot.localRotation = _visualRootBaseRotation * rotation;

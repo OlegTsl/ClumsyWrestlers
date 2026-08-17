@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Game.Core.Entities;
 using Game.Core.Level.Entities;
 using UnityEngine;
+using EntityId = Game.Core.Entities.EntityId;
 
 namespace Game.Core.Level
 {
