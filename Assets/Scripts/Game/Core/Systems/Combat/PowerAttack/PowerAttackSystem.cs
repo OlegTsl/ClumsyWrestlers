@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using Game.Core.Character;
+using Game.Core.Entities;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -9,12 +9,12 @@ namespace Game.Core.Systems
 {
     public sealed class PowerAttackSystem : IPowerAttackSystem, IFixedTickable
     {
-        private readonly GameEventsBus     _events;
+        private readonly IGameEventsBus     _events;
         private readonly ICharacterContext _context;
-        private readonly Dictionary<Guid, PowerAttackState> _states = new();
+        private readonly Dictionary<EntityId, PowerAttackState> _states = new(16);
 
         public PowerAttackSystem(
-            GameEventsBus     events,
+            IGameEventsBus     events,
             ICharacterContext context
         )
         {
@@ -39,18 +39,18 @@ namespace Game.Core.Systems
             }
         }
 
-        private void Register(Guid characterId)
+        private void Register(EntityId characterId)
         {
             if (!_states.ContainsKey(characterId))
                 _states[characterId] = new PowerAttackState();
         }
 
-        private void Unregister(Guid characterId)
+        private void Unregister(EntityId characterId)
         {
             if (_states.TryGetValue(characterId, out PowerAttackState state) && state.IsAttacking)
             {
                 ICharacterModel model = _context.GetModel(characterId);
-                model?.SetMovable(true);
+                model?.GetState<ICharacterMovementState>().SetMovable(true);
             }
 
             _states.Remove(characterId);
@@ -59,13 +59,18 @@ namespace Game.Core.Systems
         private void OnPowerAttackRequested(OnPowerAttackRequestedEvent evt)
         {
             ICharacterModel model = _context.GetModel(evt.CharacterID);
-            if (model == null || !model.Enabled)
+            if (model == null)
+                return;
+
+            ICharacterCombatRuntimeState combat =
+                model.GetState<ICharacterCombatRuntimeState>();
+            if (!combat.Enabled)
                 return;
 
             if (!_states.TryGetValue(evt.CharacterID, out PowerAttackState state) || state.IsAttacking)
                 return;
 
-            StartPowerAttack(model, state);
+            StartPowerAttack(combat, state);
         }
 
         private void OnHitResolved(OnHitResolvedEvent evt)
@@ -78,7 +83,9 @@ namespace Game.Core.Systems
 
             ICharacterModel model = _context.GetModel(evt.Hit.TargetID);
             if (model != null)
-                EndPowerAttack(model, state);
+                EndPowerAttack(
+                    model.GetState<ICharacterCombatRuntimeState>(),
+                    state);
         }
 
         public void FixedTick()
@@ -90,17 +97,21 @@ namespace Game.Core.Systems
                 if (!_states.TryGetValue(model.CharacterID, out PowerAttackState state) || !state.IsAttacking)
                     continue;
 
-                if (!model.Enabled)
+                ICharacterCombatRuntimeState combat =
+                    model.GetState<ICharacterCombatRuntimeState>();
+                if (!combat.Enabled)
                 {
-                    EndPowerAttack(model, state);
+                    EndPowerAttack(combat, state);
                     continue;
                 }
 
-                UpdatePowerAttack(model, state);
+                UpdatePowerAttack(combat, state);
             }
         }
 
-        private void StartPowerAttack(ICharacterModel model, PowerAttackState state)
+        private void StartPowerAttack(
+            ICharacterCombatRuntimeState model,
+            PowerAttackState state)
         {
             PowerAttackSettings settings = model.Data.Combat.PowerAttack;
             if (settings.Duration <= 0f || settings.AnimationClip == null)
@@ -113,7 +124,9 @@ namespace Game.Core.Systems
                 model.CharacterID, settings.AnimationClip));
         }
 
-        private void UpdatePowerAttack(ICharacterModel model, PowerAttackState state)
+        private void UpdatePowerAttack(
+            ICharacterCombatRuntimeState model,
+            PowerAttackState state)
         {
             state.Elapsed += Time.fixedDeltaTime;
 
@@ -121,7 +134,9 @@ namespace Game.Core.Systems
                 EndPowerAttack(model, state);
         }
 
-        private void EndPowerAttack(ICharacterModel model, PowerAttackState state)
+        private void EndPowerAttack(
+            ICharacterCombatRuntimeState model,
+            PowerAttackState state)
         {
             if (!state.IsAttacking)
                 return;

@@ -7,6 +7,7 @@ namespace Game.Core.Character
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<CharacterContext>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CharacterViewContext>().AsSingle();
             Container.BindInterfacesAndSelfTo<CharacterBuilder>().AsSingle();
         }
     }

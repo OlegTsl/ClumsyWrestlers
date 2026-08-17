@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.Common.Input
@@ -9,7 +8,6 @@ namespace Game.Common.Input
         public bool IsActive { get; set; } = true;
 
         private float _sensitivity = 2f;
-        private readonly List<IActionInput> _actionBuffer = new(4);
         private bool _wasLmbPressed;
         private bool _wasRmbPressed;
 
@@ -31,29 +29,21 @@ namespace Game.Common.Input
             return new LookInput(delta);
         }
 
-        public IReadOnlyList<IActionInput> GetActionInputs()
+        public void PublishActions(IInputEventsBus eventBus)
         {
-            _actionBuffer.Clear();
-
             bool lmbPressed = UnityEngine.Input.GetMouseButton(0);
             if (lmbPressed && !_wasLmbPressed)
-                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Pressed));
+                eventBus.Publish(new SimpleAttackAction(InputEventType.Pressed));
             else if (!lmbPressed && _wasLmbPressed)
-                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Released));
-            else if (lmbPressed)
-                _actionBuffer.Add(new SimpleAttackAction(InputEventType.Held));
+                eventBus.Publish(new SimpleAttackAction(InputEventType.Released));
             _wasLmbPressed = lmbPressed;
 
             bool rmbPressed = UnityEngine.Input.GetMouseButton(1);
             if (rmbPressed && !_wasRmbPressed)
-                _actionBuffer.Add(new PowerAttackAction(InputEventType.Pressed));
+                eventBus.Publish(new PowerAttackAction(InputEventType.Pressed));
             else if (!rmbPressed && _wasRmbPressed)
-                _actionBuffer.Add(new PowerAttackAction(InputEventType.Released));
-            else if (rmbPressed)
-                _actionBuffer.Add(new PowerAttackAction(InputEventType.Held));
+                eventBus.Publish(new PowerAttackAction(InputEventType.Released));
             _wasRmbPressed = rmbPressed;
-
-            return _actionBuffer;
         }
     }
 }

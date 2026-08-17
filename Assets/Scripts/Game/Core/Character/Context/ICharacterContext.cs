@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Game.Core.Entities;
 
 namespace Game.Core.Character
 {
     public interface ICharacterContext
-    { 
-        void            AddCharacter(ICharacterModel character);
-        void            RemoveCharacter(Guid characterID);
-        ICharacterModel GetModel(Guid characterID);
-        ICharacterModel GetModel(Collider collider);
-
+    {
         IReadOnlyList<ICharacterModel> AllCharacters { get; }
-        event Action<Guid> OnCharacterAdded;
-        event Action<Guid> OnCharacterRemoved;
+
+        event Action<EntityId> OnCharacterAdded;
+        event Action<EntityId> OnCharacterRemoved;
+
+        void AddCharacter(ICharacterModel character);
+        void RemoveCharacter(EntityId characterId);
+        ICharacterModel GetModel(EntityId characterId);
     }
 }

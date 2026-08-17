@@ -144,7 +144,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerSpawnPoint: {fileID: 7692069548889243949}
   _enemySpawnPoint: {fileID: 8115091862893533393}
-  _interactableChests:
+  _levelEntities:
   - {fileID: 2856662248269434}
 --- !u!1 &7923460089801864476
 GameObject:

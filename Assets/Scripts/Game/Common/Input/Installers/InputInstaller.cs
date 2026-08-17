@@ -6,7 +6,7 @@ namespace Game.Common.Input
     {
         public override void InstallBindings()
         {
-            Container.Bind<InputEventsBus>().AsSingle();
+            Container.BindInterfacesAndSelfTo<InputEventsBus>().AsSingle();
 
             Container.Bind<IInputSource>()
                 .To<KeyboardSource>()

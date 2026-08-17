@@ -11,8 +11,8 @@ namespace Game.Common.Installers
         {
             InputInstaller.Install(Container);
 
-            Container.Bind<IAssetManager>().To<AssetManager>().AsSingle();
-            Container.Bind<ILocalizationService>().To<LocalizationService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<AssetManager>().AsSingle();
+            Container.BindInterfacesAndSelfTo<LocalizationService>().AsSingle();
         }
     }
 }

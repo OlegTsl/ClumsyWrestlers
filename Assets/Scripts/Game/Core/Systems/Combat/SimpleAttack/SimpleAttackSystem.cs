@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using Game.Core.Character;
+using Game.Core.Entities;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -9,12 +9,12 @@ namespace Game.Core.Systems
 {
     public sealed class SimpleAttackSystem : ISimpleAttackSystem, IFixedTickable
     {
-        private readonly GameEventsBus     _gameEventsBus;
+        private readonly IGameEventsBus     _gameEventsBus;
         private readonly ICharacterContext _context;
-        private readonly Dictionary<Guid, SimpleAttackState> _states = new();
+        private readonly Dictionary<EntityId, SimpleAttackState> _states = new(16);
 
         public SimpleAttackSystem(
-            GameEventsBus     gameEventsBus,
+            IGameEventsBus     gameEventsBus,
             ICharacterContext context
         )
         {
@@ -38,7 +38,15 @@ namespace Game.Core.Systems
                 ICharacterModel   model = _context.GetModel(pair.Key);
                 SimpleAttackState state = pair.Value;
 
-                if (model == null || !model.Enabled)
+                if (model == null)
+                {
+                    InterruptAttack(model, state);
+                    continue;
+                }
+
+                ICharacterCombatRuntimeState combat =
+                    model.GetState<ICharacterCombatRuntimeState>();
+                if (!combat.Enabled)
                 {
                     InterruptAttack(model, state);
                     continue;
@@ -47,7 +55,7 @@ namespace Game.Core.Systems
                 if (!state.IsAttacking)
                     continue;
 
-                UpdateAttack(model, state);
+                UpdateAttack(combat, state);
             }
         }
 
@@ -62,16 +70,23 @@ namespace Game.Core.Systems
                 return;
 
             ICharacterModel model = _context.GetModel(evt.CharacterID);
-            if (model == null || !model.Enabled || !model.IsMovable)
+            if (model == null)
+                return;
+
+            ICharacterCombatRuntimeState combat =
+                model.GetState<ICharacterCombatRuntimeState>();
+            if (!combat.Enabled || !combat.IsMovable)
                 return;
 
             if (state.IsAttacking)
                 return;
 
-            StartAttack(model, state);
+            StartAttack(combat, state);
         }
 
-        private void UpdateAttack(ICharacterModel model, SimpleAttackState state)
+        private void UpdateAttack(
+            ICharacterCombatRuntimeState model,
+            SimpleAttackState state)
         {
             state.Elapsed += Time.fixedDeltaTime;
             UpdateHandIk(model, state);
@@ -86,7 +101,9 @@ namespace Game.Core.Systems
                 StartAttack(model, state);
         }
 
-        private static void UpdateHandIk(ICharacterModel model, SimpleAttackState state)
+        private void UpdateHandIk(
+            ICharacterCombatRuntimeState model,
+            SimpleAttackState state)
         {
             SimpleAttackSettings settings = model.Data.Combat.SimpleAttack;
 
@@ -98,10 +115,16 @@ namespace Game.Core.Systems
             float weight = blend * settings.HandIkWeight;
 
             Vector3 targetPosition = model.AttackOrigin + model.Forward * settings.HandIkReach;
-            model.SetAttackHandIk(state.ActiveHand, targetPosition, weight);
+            _gameEventsBus.Publish(new OnAttackHandIkEvent(
+                model.CharacterID,
+                state.ActiveHand,
+                targetPosition,
+                weight));
         }
 
-        private void StartAttack(ICharacterModel model, SimpleAttackState state)
+        private void StartAttack(
+            ICharacterCombatRuntimeState model,
+            SimpleAttackState state)
         {
             SimpleAttackSettings settings = model.Data.Combat.SimpleAttack;
             if (settings == null || settings.Duration <= 0f)
@@ -113,9 +136,11 @@ namespace Game.Core.Systems
                 model.CharacterID, state.IsMirrored));
         }
 
-        private void EndAttack(ICharacterModel model, SimpleAttackState state)
+        private void EndAttack(
+            ICharacterCombatRuntimeState model,
+            SimpleAttackState state)
         {
-            model.ClearAttackHandIk();
+            _gameEventsBus.Publish(new OnAttackHandIkClearedEvent(model.CharacterID));
             state.FinishAttack();
 
             _gameEventsBus.Publish(
@@ -144,7 +169,7 @@ namespace Game.Core.Systems
                 _gameEventsBus.Publish(
                     new OnSimpleAttackEndedEvent(model.CharacterID));
 
-                model.ClearAttackHandIk();
+                _gameEventsBus.Publish(new OnAttackHandIkClearedEvent(model.CharacterID));
             }
 
             state.Reset();
@@ -159,13 +184,13 @@ namespace Game.Core.Systems
             }
         }
 
-        private void Register(Guid characterID)
+        private void Register(EntityId characterID)
         {
             if (!_states.ContainsKey(characterID))
                 _states[characterID] = new SimpleAttackState();
         }
 
-        private void Unregister(Guid characterID)
+        private void Unregister(EntityId characterID)
             => _states.Remove(characterID);
 
         public void Dispose()

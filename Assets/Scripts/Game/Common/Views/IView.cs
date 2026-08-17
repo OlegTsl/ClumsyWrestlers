@@ -4,7 +4,5 @@
     {
         void Show();
         void Hide();
-        
-        System.Action DisposeAction { get; set; }
     }
 }

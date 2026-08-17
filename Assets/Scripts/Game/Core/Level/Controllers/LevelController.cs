@@ -1,72 +1,101 @@
+using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
 using Game.Core.Character;
-using UnityEngine;
 
 namespace Game.Core.Level
 {
-    public class LevelController : ILevelController
+    public sealed class LevelController : ILevelController
     {
         private readonly IAssetManager _assetManager;
+        private readonly ICharacterViewContext _viewContext;
 
-        private ILevelModel _level;
-        private string _levelName;
+        private IViewLease<LevelView> _levelLease;
+        private ILevelSpawnPointProvider _spawnPointProvider;
 
-        public ILevelModel Level => _level;
+        public ILevelModel Level { get; private set; }
+        public bool IsLevelLoaded => Level != null;
 
         public LevelController(
-            IAssetManager assetManager
+            IAssetManager assetManager,
+            ICharacterViewContext viewContext
         )
         {
             _assetManager = assetManager;
+            _viewContext = viewContext;
         }
 
-        public async UniTask LoadLevel(string address)
+        public async UniTask LoadLevelAsync(
+            string address,
+            CancellationToken cancellationToken
+        )
         {
             UnloadLevel();
+            IViewLease<LevelView> nextLease = null;
 
-            ILevelView view = await _assetManager.LoadView<ILevelView>(address);
-            if (view == null)
+            try
             {
-                Debug.LogError($"Failed to load level: {address}");
-                return;
+                nextLease = await _assetManager.InstantiateViewAsync<LevelView>(
+                    address,
+                    null,
+                    cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                LevelModel level = new(nextLease.View);
+                _levelLease = nextLease;
+                Level = level;
+                _spawnPointProvider = level;
+                nextLease = null;
+            }
+            finally
+            {
+                nextLease?.Dispose();
+            }
+        }
+
+        public void SpawnCharacter(ICharacterModel model, bool isPlayer)
+        {
+            if (Level == null)
+            {
+                throw new InvalidOperationException("A level must be loaded before spawning.");
             }
 
-            _level = new LevelModel(view);
-            _levelName = address;
-            Debug.Log($"Level loaded: {address}");
+            ICharacterView view = _viewContext.GetView(model.CharacterID);
+            if (view == null)
+            {
+                throw new InvalidOperationException(
+                    $"Character {model.CharacterID} has no registered view.");
+            }
 
-            return;
+            LevelSpawnPoint spawnPoint =
+                _spawnPointProvider.GetCharacterSpawnPoint(isPlayer);
+            ICharacterTransformState transform =
+                model.GetState<ICharacterTransformState>();
+            ICharacterPhysicsState physics =
+                model.GetState<ICharacterPhysicsState>();
+            ICharacterActivityState activity =
+                model.GetState<ICharacterActivityState>();
+            view.SetPosition(spawnPoint.Position);
+            view.SetRotation(spawnPoint.Rotation);
+            transform.SetPosition(spawnPoint.Position);
+            transform.SetRotation(spawnPoint.Rotation);
+            physics.SetVelocity(UnityEngine.Vector3.zero);
+            activity.SetEnabled(true);
+            view.Show();
         }
 
         public void UnloadLevel()
         {
-            if (_level != null)
-            {
-                _assetManager.UnloadAsset(_levelName);
-                Debug.Log($"Level unloaded: {_levelName}");
+            Level?.Dispose();
+            Level = null;
+            _spawnPointProvider = null;
 
-                _levelName = "";
-                _level     = null;
-            }
+            _levelLease?.Dispose();
+            _levelLease = null;
         }
 
-        public bool IsLevelLoaded()
-            => _level != null;
-
-
-        public void SpawnCharacter(ICharacterModel model, bool isPlayer)
-        {
-            if (!IsLevelLoaded())
-            {
-                Debug.LogError($"Level not loaded!");
-                return;
-            }
-
-            Transform spawnPoint = _level.GetCharacterSpawnPosition(isPlayer);
-            model.SetPosition(spawnPoint.position);
-            model.SetRotation(spawnPoint.rotation);
-            model.SetEnabled(true);
-        }
+        public void Dispose()
+            => UnloadLevel();
     }
 }

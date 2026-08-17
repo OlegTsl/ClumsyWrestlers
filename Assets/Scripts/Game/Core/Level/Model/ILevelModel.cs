@@ -1,16 +1,8 @@
 using System;
-using System.Collections.Generic;
-using Game.Core.Environment;
-using UnityEngine;
 
 namespace Game.Core.Level
 {
-    public interface ILevelModel
+    public interface ILevelModel : IDisposable
     {
-        IReadOnlyList<IInteractableChestView> InteractableChests { get; }
-
-        Transform GetCharacterSpawnPosition(bool isPlayer);
-        IInteractableChestView GetInteractableChest(Guid chestID);
-        IInteractableChestView GetInteractableChest(Collider hitbox);
     }
 }

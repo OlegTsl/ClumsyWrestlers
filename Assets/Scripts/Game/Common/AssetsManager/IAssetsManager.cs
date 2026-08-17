@@ -1,18 +1,22 @@
-using System.Collections.Generic;
+using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.Views;
 using UnityEngine;
 
 namespace Game.Common.AssetsManager
 {
-    public interface IAssetManager
+    public interface IAssetManager : IDisposable
     {
-        UniTask<T> LoadView<T>(string address, Transform parent = null) where T : class, IView;
-        UniTask<T> LoadAsset<T>(string address) where T : class;
-        UniTask<T> LoadAsset<T>(string address, Transform parent) where T : class;
+        UniTask<IAssetLease<T>> LoadAssetAsync<T>(
+            string address,
+            CancellationToken cancellationToken
+        ) where T : UnityEngine.Object;
 
-        void UnloadAsset(string address);
-        UniTask PrewarmAssets<T>(List<string> addresses) where T : class;
-        void ClearCache();
+        UniTask<IViewLease<TView>> InstantiateViewAsync<TView>(
+            string address,
+            Transform parent,
+            CancellationToken cancellationToken
+        ) where TView : class, IView;
     }
 }

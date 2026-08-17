@@ -1,10 +1,9 @@
-using UnityEngine;
+using System;
 
 namespace Game.Core.Systems
 {
-    public interface IAimSystem
+    public interface IAimSystem : IDisposable
     {
-        void Rotate(Vector2 lookDelta);
         void Update();
     }
 }

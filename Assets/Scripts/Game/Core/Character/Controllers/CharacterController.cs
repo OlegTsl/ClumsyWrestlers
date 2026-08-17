@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using Game.Common.Input;
-using Game.Core.GameEvents;
+using Game.Core.Commands;
 using Game.Core.Systems;
 using UnityEngine;
 
@@ -8,130 +7,113 @@ namespace Game.Core.Character
 {
     public sealed class CharacterController : ICharacterController
     {
-        private readonly ICharacterModel   _model;
-        private readonly InputController   _inputController;
-        private readonly InputEventsBus    _inputEventsBus;
-        private readonly GameEventsBus     _gameEventsBus;
-        private readonly ILookSystem       _lookSystem;
-        private readonly IAimSystem        _aimSystem;
-
-        private bool _isAiming;
-        private bool _isMoveInputActive;
+        private readonly ICharacterModel _model;
+        private readonly ICharacterAimState _aimState;
+        private readonly IInputEventsBus _inputEvents;
+        private readonly ICharacterCommandSink _commandSink;
+        private readonly ISimulationClock _clock;
+        private readonly ILookSystem _lookSystem;
+        private readonly IAimSystem _aimSystem;
 
         public CharacterController(
-            ICharacterModel           model,
-            IEnumerable<IInputSource> inputSources,
-            InputEventsBus            inputEventsBus,
-            GameEventsBus             gameEventsBus
+            ICharacterModel model,
+            ICharacterView view,
+            IInputEventsBus inputEvents,
+            ICharacterCommandSink commandSink,
+            ISimulationClock clock,
+            Transform camera
         )
         {
-            _model         = model;
-            _gameEventsBus = gameEventsBus;
+            _model = model;
+            _aimState = model.GetState<ICharacterAimState>();
+            _inputEvents = inputEvents;
+            _commandSink = commandSink;
+            _clock = clock;
 
-            _inputEventsBus = inputEventsBus;
-            _inputEventsBus.Subscribe<MoveInput>(HandleMove);
-            _inputEventsBus.Subscribe<LookInput>(HandleLook);
-            _inputEventsBus.Subscribe<JumpAction>(HandleJump);
-            _inputEventsBus.Subscribe<SimpleAttackAction>(HandleSimpleAttack);
-            _inputEventsBus.Subscribe<PowerAttackAction>(HandlePowerAttack);
+            _inputEvents.Subscribe<MoveInput>(HandleMove);
+            _inputEvents.Subscribe<LookInput>(HandleLook);
+            _inputEvents.Subscribe<JumpAction>(HandleJump);
+            _inputEvents.Subscribe<SimpleAttackAction>(HandleSimpleAttack);
+            _inputEvents.Subscribe<PowerAttackAction>(HandlePowerAttack);
 
-            _inputController = new InputController(
-                inputSources, inputEventsBus);
-
-            _lookSystem = new LookSystem(
-                model.Transform, Camera.main.transform);
-
-            _aimSystem = new AimSystem(model);
+            _lookSystem = new LookSystem(view.Transform, camera);
+            _aimSystem = new AimSystem(
+                model.GetState<ICharacterTransformState>(),
+                view);
         }
 
         private void HandleMove(MoveInput input)
-        {
-            _isMoveInputActive = input.IsActive;
-
-            _gameEventsBus.Publish(new OnMoveEvent(
+            => Enqueue(new CharacterCommand(
                 _model.CharacterID,
-                GetMoveDirection(input)
-            ));
-        }
-
-        private Vector3 GetMoveDirection(MoveInput input)
-        {
-            if (!input.IsActive)
-                return Vector3.zero;
-
-            return _isAiming ? _model.Forward : input.Direction;
-        }
+                _clock.NextTick,
+                CharacterCommandType.Move,
+                direction: input.Direction));
 
         private void HandleLook(LookInput input)
         {
-            if (!_isAiming)
-                return;
-
-            _aimSystem.Rotate(input.Delta);
-
-            if (_isMoveInputActive)
+            if (input.IsActive)
             {
-                _gameEventsBus.Publish(new OnMoveEvent(
-                    _model.CharacterID, _model.Forward));
+                Enqueue(new CharacterCommand(
+                    _model.CharacterID,
+                    _clock.NextTick,
+                    CharacterCommandType.Look,
+                    lookDelta: input.Delta));
             }
         }
 
         private void HandleJump(JumpAction action)
         {
-            if (action.EventType != InputEventType.Pressed)
-                return;
-
-            _gameEventsBus.Publish(new OnJumpEvent(
-                _model.CharacterID));
+            if (action.EventType == InputEventType.Pressed)
+            {
+                EnqueueAction(CharacterCommandType.Jump, action.EventType);
+            }
         }
 
         private void HandleSimpleAttack(SimpleAttackAction action)
         {
-            if (action.EventType == InputEventType.Held)
-                return;
-
-            _gameEventsBus.Publish(new OnSimpleAttackInputEvent(
-                _model.CharacterID, action.EventType == InputEventType.Pressed));
+            if (action.EventType != InputEventType.Held)
+            {
+                EnqueueAction(CharacterCommandType.SimpleAttack, action.EventType);
+            }
         }
 
         private void HandlePowerAttack(PowerAttackAction action)
         {
-            if (action.EventType == InputEventType.Pressed)
+            if (action.EventType != InputEventType.Held)
             {
-                _isAiming = true;
-
-                if (_isMoveInputActive)
-                {
-                    _gameEventsBus.Publish(new OnMoveEvent(
-                        _model.CharacterID, _model.Forward));
-                }
+                EnqueueAction(CharacterCommandType.PowerAttack, action.EventType);
             }
-            else if (action.EventType == InputEventType.Released)
-            {
-                _isAiming = false;
-
-                _gameEventsBus.Publish(
-                    new OnPowerAttackRequestedEvent(_model.CharacterID));
-            }
-
-            _model.SetAimEnabled(_isAiming);
         }
+
+        private void EnqueueAction(CharacterCommandType type, InputEventType inputType)
+            => Enqueue(new CharacterCommand(
+                _model.CharacterID,
+                _clock.NextTick,
+                type,
+                inputEventType: inputType));
+
+        private void Enqueue(in CharacterCommand command)
+            => _commandSink.TryEnqueue(command);
 
         public void LateTick()
         {
-            if (_isAiming)
+            if (_aimState.IsAiming)
+            {
                 _aimSystem.Update();
+            }
 
             _lookSystem.LateTick();
         }
 
         public void Dispose()
         {
-            _inputEventsBus.Unsubscribe<MoveInput>(HandleMove);
-            _inputEventsBus.Unsubscribe<LookInput>(HandleLook);
-            _inputEventsBus.Unsubscribe<JumpAction>(HandleJump);
-            _inputEventsBus.Unsubscribe<SimpleAttackAction>(HandleSimpleAttack);
-            _inputEventsBus.Unsubscribe<PowerAttackAction>(HandlePowerAttack);
+            _inputEvents.Unsubscribe<MoveInput>(HandleMove);
+            _inputEvents.Unsubscribe<LookInput>(HandleLook);
+            _inputEvents.Unsubscribe<JumpAction>(HandleJump);
+            _inputEvents.Unsubscribe<SimpleAttackAction>(HandleSimpleAttack);
+            _inputEvents.Unsubscribe<PowerAttackAction>(HandlePowerAttack);
+            _aimSystem.Dispose();
+            _lookSystem.Dispose();
         }
     }
 }

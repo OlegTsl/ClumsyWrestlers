@@ -1,24 +1,29 @@
-using System;
 using System.Collections.Generic;
-using Game.Core.Environment;
+using Game.Core.Level.Entities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Game.Core.Level
 {
-    public class LevelView : MonoBehaviour, ILevelView
+    public sealed class LevelView : MonoBehaviour, ILevelView
     {
         [SerializeField] private Transform _playerSpawnPoint;
         [SerializeField] private Transform _enemySpawnPoint;
-        [SerializeField] private InteractableChestView[] _interactableChests;
+        [FormerlySerializedAs("_interactableChests")]
+        [SerializeField] private LevelEntityView[] _levelEntities;
 
-        public IReadOnlyList<IInteractableChestView> InteractableChests => _interactableChests;
+        public IReadOnlyList<ILevelEntityView> LevelEntities => _levelEntities;
 
-        public Transform GetCharacterSpawnPosition(bool isPlayer)
-            => isPlayer ? _playerSpawnPoint : _enemySpawnPoint;
+        public LevelSpawnPoint GetCharacterSpawnPoint(bool isPlayer)
+        {
+            Transform spawnPoint = isPlayer ? _playerSpawnPoint : _enemySpawnPoint;
+            return new LevelSpawnPoint(spawnPoint.position, spawnPoint.rotation);
+        }
 
-        public void Hide() => gameObject.SetActive(false);
-        public void Show() => gameObject.SetActive(true);
+        public void Hide()
+            => gameObject.SetActive(false);
 
-        public Action DisposeAction { get; set; }
+        public void Show()
+            => gameObject.SetActive(true);
     }
 }

@@ -14,9 +14,7 @@ namespace Game.Core.Cameras
         private int _screenHeight;
 
         private void OnEnable()
-        {
-            ApplyFraming();
-        }
+            => ApplyFraming();
 
         private void OnPreCull()
         {

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Game.Common.Input
 {
     public interface IInputSource
@@ -10,6 +8,6 @@ namespace Game.Common.Input
         MoveInput GetMoveInput();
         LookInput GetLookInput();
         
-        IReadOnlyList<IActionInput> GetActionInputs();
+        void PublishActions(IInputEventsBus eventBus);
     }
 }

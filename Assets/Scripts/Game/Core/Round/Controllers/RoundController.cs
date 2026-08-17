@@ -1,139 +1,134 @@
+using System.Threading;
 using Cysharp.Threading.Tasks;
-using Game.Common.AssetsManager;
 using Game.Common.Input;
 using Game.Core.Character;
-using Game.Core.GameEvents;
+using Game.Core.Commands;
 using Game.Core.Level;
+using UnityEngine;
 using Zenject;
 
 namespace Game.Core.Round
 {
-    public class RoundController : IRoundController, ILateTickable
+    public sealed class RoundController : IRoundController, ILateTickable
     {
-        private readonly ICharacterContext  _context;
-        private readonly ILevelController   _levelController;
-        private readonly ICharacterBuilder  _characterBuilder;
-        private readonly IAssetManager      _assetManager;
-        private readonly GameEventsBus      _gameEventsBus;
-        private readonly InputEventsBus     _inputEventsBus;
+        private const string CharacterAddress = "Wrestler";
+
+        private readonly ILevelController _levelController;
+        private readonly ICharacterBuilder _characterBuilder;
+        private readonly IInputEventsBus _inputEvents;
+        private readonly ICharacterCommandSink _commandSink;
+        private readonly ICharacterCommandBuffer _commandBuffer;
+        private readonly ISimulationClock _clock;
         private readonly IRoundSystemsScope _systemsScope;
 
-        private ICharacterController _characterController;
-        private IBotController       _botController;
-        private ICharacterModel      _player;
-        private ICharacterModel      _enemy;
-        
+        private CancellationTokenSource _roundCancellation;
+        private ICharacterController _playerController;
+        private ICharacterRuntime _player;
+        private ICharacterRuntime _enemy;
+        private uint _generation;
+
         public RoundController(
-            ICharacterContext context,
-            ILevelController  levelController,
+            ILevelController levelController,
             ICharacterBuilder characterBuilder,
-            IAssetManager     assetManager,
-            GameEventsBus     gameEventsBus,
-            InputEventsBus    inputEventsBus,
+            IInputEventsBus inputEvents,
+            ICharacterCommandSink commandSink,
+            ICharacterCommandBuffer commandBuffer,
+            ISimulationClock clock,
             IRoundSystemsScope systemsScope
         )
         {
-            _context          = context;
-            _levelController  = levelController;
+            _levelController = levelController;
             _characterBuilder = characterBuilder;
-            _assetManager     = assetManager;
-            _gameEventsBus    = gameEventsBus;
-            _inputEventsBus   = inputEventsBus;
-            _systemsScope     = systemsScope;
+            _inputEvents = inputEvents;
+            _commandSink = commandSink;
+            _commandBuffer = commandBuffer;
+            _clock = clock;
+            _systemsScope = systemsScope;
         }
 
-        public async UniTask StartRound(string levelAddress)
+        public async UniTask StartRoundAsync(
+            string levelAddress,
+            CancellationToken cancellationToken
+        )
         {
             EndRound();
+            uint generation = ++_generation;
+            _roundCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken);
+            CancellationTokenSource currentCancellation = _roundCancellation;
+            CancellationToken roundToken = currentCancellation.Token;
+            ICharacterRuntime player = null;
+            ICharacterRuntime enemy = null;
 
             try
             {
-                await LoadLevel(levelAddress);
-
-                var (player, enemy) = await UniTask.WhenAll(
-                    _characterBuilder.BuidCharacter("Wrestler"),
-                    _characterBuilder.BuidCharacter("Wrestler")
-                );
+                await _levelController.LoadLevelAsync(levelAddress, roundToken);
+                player = await _characterBuilder.BuildCharacterAsync(
+                    CharacterAddress,
+                    roundToken);
+                enemy = await _characterBuilder.BuildCharacterAsync(
+                    CharacterAddress,
+                    roundToken);
+                roundToken.ThrowIfCancellationRequested();
 
                 _player = player;
-                _enemy  = enemy;
+                _enemy = enemy;
+                player = null;
+                enemy = null;
 
-                if (player != null)
-                {
-                    var inputSources = new IInputSource[]
-                    {
-                        new KeyboardSource(priority: 0),
-                        new MouseSource   (priority: 1)
-                    };
-
-                    _characterController = new CharacterController(
-                        player, inputSources, _inputEventsBus, _gameEventsBus);
-
-                    _levelController.SpawnCharacter(player, true);
-                }
-
-                if (enemy != null)
-                {
-                    _botController = new BotController(enemy);
-                    _levelController.SpawnCharacter(enemy, false);
-                }
-
+                _levelController.SpawnCharacter(_player.Model, true);
+                _levelController.SpawnCharacter(_enemy.Model, false);
                 _systemsScope.StartRound();
+
+                Camera mainCamera = Camera.main;
+                _playerController = new Game.Core.Character.CharacterController(
+                    _player.Model,
+                    _player.View,
+                    _inputEvents,
+                    _commandSink,
+                    _clock,
+                    mainCamera.transform);
             }
             catch
             {
-                EndRound();
+                player?.Dispose();
+                enemy?.Dispose();
+                if (_generation == generation &&
+                    ReferenceEquals(_roundCancellation, currentCancellation))
+                {
+                    EndRound();
+                }
+
                 throw;
             }
         }
 
-        private UniTask LoadLevel(string name)
-            => _levelController.LoadLevel(name);
-
-        private void UnloadLevel()
-            => _levelController.UnloadLevel();
-
-        private void UnloadCharacter(string name)
-            => _assetManager.UnloadAsset(name);
-
         public void EndRound()
         {
-            if (_characterController != null)
-            {
-                _characterController.Dispose();
-                _characterController = null;
-            }
+            _generation++;
 
-            if (_botController != null)
-            {
-                _botController.Dispose();
-                _botController = null;
-            }
+            CancellationTokenSource cancellation = _roundCancellation;
+            _roundCancellation = null;
+            cancellation?.Cancel();
+            cancellation?.Dispose();
+
+            _playerController?.Dispose();
+            _playerController = null;
 
             _systemsScope.EndRound();
 
-            DisposeCharacter(ref _player);
-            DisposeCharacter(ref _enemy);
+            _player?.Dispose();
+            _player = null;
+            _enemy?.Dispose();
+            _enemy = null;
 
-            UnloadLevel();
-            UnloadCharacter("Wrestler");
-        }
-
-        private void DisposeCharacter(ref ICharacterModel character)
-        {
-            if (character == null)
-                return;
-
-            _context.RemoveCharacter(character.CharacterID);
-            character.Dispose();
-            character = null;
+            _levelController.UnloadLevel();
+            _commandBuffer.Clear();
+            _clock.Reset();
         }
 
         public void LateTick()
-        {
-            if (_characterController != null)
-                _characterController.LateTick();
-        }
+            => _playerController?.LateTick();
 
         public void Dispose()
             => EndRound();

@@ -1,11 +1,13 @@
+using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace Game.Common.Localization
 {
-    public interface ILocalizationService
+    public interface ILocalizationService : IDisposable
     {
-        UniTask SetDefaultLanguage();
+        UniTask SetDefaultLanguageAsync(CancellationToken cancellationToken);
+        UniTask SetLanguageAsync(string languageCode, CancellationToken cancellationToken);
         string GetTranslation(string key, params object[] args);
-        UniTask SetLanguage(string languageCode);
     }
 }

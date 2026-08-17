@@ -4,11 +4,11 @@ namespace Game.Core.Systems
 {
     internal sealed class HitReactionState
     {
-        public bool  Active;
-        public float Elapsed;
-        public float Duration;
-        public Quaternion StartRotation   = Quaternion.identity;
-        public Quaternion TargetRotation  = Quaternion.identity;
-        public Quaternion CurrentRotation = Quaternion.identity;
+        public bool Active { get; set; }
+        public float Elapsed { get; set; }
+        public float Duration { get; set; }
+        public Quaternion StartRotation { get; set; } = Quaternion.identity;
+        public Quaternion TargetRotation { get; set; } = Quaternion.identity;
+        public Quaternion CurrentRotation { get; set; } = Quaternion.identity;
     }
 }

@@ -1,36 +1,37 @@
-using System;
+using Game.Core.Entities;
 using UnityEngine;
 
 namespace Game.Core.GameEvents
 {
     public readonly struct OnMoveEvent
     {
-        public readonly Guid    CharacterID { get; }
-        public readonly Vector3 Direction   { get; }
+        public EntityId CharacterID { get; }
+        public Vector3 Direction { get; }
 
-        public OnMoveEvent(Guid characterID, Vector3 direction)
+        public OnMoveEvent(EntityId characterID, Vector3 direction)
         {
             CharacterID = characterID;
-            Direction   = direction;
+            Direction = direction;
         }
     }
 
     public readonly struct OnJumpEvent
     {
-        public readonly Guid CharacterID { get; }
-        public OnJumpEvent(Guid characterID)
+        public EntityId CharacterID { get; }
+
+        public OnJumpEvent(EntityId characterID)
             => CharacterID = characterID;
     }
 
     public readonly struct OnForceEvent
     {
-        public readonly Guid    CharacterID { get; }
-        public readonly Vector3 Force       { get; }
+        public EntityId CharacterID { get; }
+        public Vector3 Force { get; }
 
-        public OnForceEvent(Guid characterID, Vector3 force)
+        public OnForceEvent(EntityId characterID, Vector3 force)
         {
             CharacterID = characterID;
-            Force       = force;
+            Force = force;
         }
     }
 }

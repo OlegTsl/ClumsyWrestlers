@@ -1,11 +1,12 @@
-using System;
+using Game.Core.Entities;
 
 namespace Game.Core.GameEvents
 {
     public readonly struct OnFallEvent
     {
-        public readonly Guid CharacterID { get; }
-        public OnFallEvent(Guid characterID)
+        public EntityId CharacterID { get; }
+
+        public OnFallEvent(EntityId characterID)
             => CharacterID = characterID;
     }
 }

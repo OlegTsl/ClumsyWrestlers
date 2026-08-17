@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Game.Core.GameEvents
 {
-    public class GameEventsBus
+    public sealed class GameEventsBus : IGameEventsBus
     {
         private readonly Dictionary<Type, Delegate> _handlers = new();
  

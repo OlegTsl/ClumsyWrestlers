@@ -1,11 +1,11 @@
-using System;
 using System.Collections.Generic;
 using Game.Core.Character;
 using Game.Core.Data;
+using Game.Core.Entities;
 using Game.Core.Extensions;
 using Game.Core.GameEvents;
-using Game.Core.Environment;
 using Game.Core.Level;
+using Game.Core.Level.Entities;
 using UnityEngine;
 using Zenject;
 
@@ -13,66 +13,85 @@ namespace Game.Core.Systems
 {
     public sealed class HitDetectionSystem : IHitDetectionSystem, IFixedTickable
     {
-        private const int   CHitBufferCapacity            = 32;
-        private const float CMinimumImpactSpeed           = 0.3f;
-        private const float CMinimumDirectionSqrMagnitude = 0.0001f;
+        private const int HitBufferCapacity = 32;
+        private const float MinimumDirectionSqrMagnitude = 0.0001f;
 
-        private readonly GameEventsBus     _gameEventsBus;
-        private readonly ICharacterContext _context;
-        private readonly ILevelModel       _level;
-        private readonly Collider[] _hitBuffer = new Collider[CHitBufferCapacity];
-        private readonly Dictionary<Guid, HitDetectionState> _states = new();
+        private readonly IGameEventsBus _events;
+        private readonly ICharacterContext _characters;
+        private readonly ICharacterViewContext _characterViews;
+        private readonly ILevelEntityRegistry _levelEntities;
+        private readonly Collider[] _hitBuffer = new Collider[HitBufferCapacity];
+        private readonly Dictionary<EntityId, HitDetectionState> _states = new(16);
         private readonly int _targetLayerMask =
             (1 << LayerData.Hitbox) | (1 << LayerData.Environment);
 
         public HitDetectionSystem(
-            GameEventsBus     gameEventsBus,
-            ICharacterContext context,
-            ILevelModel       level
+            IGameEventsBus events,
+            ICharacterContext characters,
+            ICharacterViewContext characterViews,
+            ILevelEntityRegistry levelEntities
         )
         {
-            _gameEventsBus = gameEventsBus;
-            _context       = context;
-            _level         = level;
+            _events = events;
+            _characters = characters;
+            _characterViews = characterViews;
+            _levelEntities = levelEntities;
 
-            _gameEventsBus.Subscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Subscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
-            _gameEventsBus.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
-            _gameEventsBus.Subscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
+            _events.Subscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
+            _events.Subscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
+            _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Subscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
+            _characters.OnCharacterAdded += Register;
+            _characters.OnCharacterRemoved += Unregister;
 
-            _context.OnCharacterAdded   += Register;
-            _context.OnCharacterRemoved += Unregister;
-
-            RegisterExistingCharacters();
+            IReadOnlyList<ICharacterModel> existingCharacters = _characters.AllCharacters;
+            for (int i = 0; i < existingCharacters.Count; i++)
+            {
+                Register(existingCharacters[i].CharacterID);
+            }
         }
 
         public void FixedTick()
         {
-            foreach (var pair in _states)
+            foreach (KeyValuePair<EntityId, HitDetectionState> pair in _states)
             {
-                var state = pair.Value;
+                HitDetectionState state = pair.Value;
                 if (!state.IsActive)
+                {
                     continue;
+                }
 
-                var attacker = _context.GetModel(pair.Key);
-                if (attacker == null || !attacker.Enabled)
+                ICharacterModel attacker = _characters.GetModel(pair.Key);
+                if (attacker == null)
+                {
+                    state.Reset();
+                    continue;
+                }
+
+                ICharacterCombatRuntimeState combat =
+                    attacker.GetState<ICharacterCombatRuntimeState>();
+                if (!combat.Enabled)
                 {
                     state.Reset();
                     continue;
                 }
 
                 state.Elapsed += Time.fixedDeltaTime;
-                
                 if (state.AttackType == AttackType.Simple)
-                    DetectSimpleAttackHits(attacker, state);
+                {
+                    DetectSimpleAttackHits(combat, state);
+                }
                 else
-                    DetectPowerAttackHits(attacker, state);
+                {
+                    DetectPowerAttackHits(combat, state);
+                }
             }
-
-            DetectEnvironmentCollisions();
         }
 
-        private void DetectSimpleAttackHits(ICharacterModel attacker, HitDetectionState state)
+        private void DetectSimpleAttackHits(
+            ICharacterCombatRuntimeState attacker,
+            HitDetectionState state
+        )
         {
             if (state.Elapsed < state.ActiveWindowStart ||
                 state.Elapsed >= state.ActiveWindowEnd)
@@ -80,195 +99,190 @@ namespace Game.Core.Systems
                 return;
             }
 
-            Vector3 forward = attacker.Forward;
-            forward.y = 0f;
-
-            if (forward.sqrMagnitude < CMinimumDirectionSqrMagnitude)
+            Vector3 forward = GetHorizontalDirection(attacker.Forward);
+            if (forward == Vector3.zero)
+            {
                 return;
-
-            forward.Normalize();
+            }
 
             Vector3 start = attacker.AttackOrigin;
-            Vector3 end   = start + forward * state.HitboxRange;
-
-            int hits = CollisionsExtension.OverlapCapsule(start, end,
-                state.HitboxRadius, _hitBuffer, _targetLayerMask);
-
-            PublishSimpleAttackHits(attacker, state, hits);
+            Vector3 end = start + forward * state.HitboxRange;
+            int hitCount = CollisionsExtension.OverlapCapsule(
+                start,
+                end,
+                state.HitboxRadius,
+                _hitBuffer,
+                _targetLayerMask);
+            PublishOverlapHits(attacker, state, hitCount, AttackType.Simple);
         }
 
-        private void PublishSimpleAttackHits(
-            ICharacterModel attacker,
-            HitDetectionState state,
-            int hits
+        private void DetectPowerAttackHits(
+            ICharacterCombatRuntimeState attacker,
+            HitDetectionState state
         )
         {
-            for (int i = 0; i < hits; i++)
+            if (state.Elapsed < state.ActiveWindowStart)
             {
-                Collider hitCollider = _hitBuffer[i];
+                return;
+            }
+
+            PublishPowerAttackCharacterHits(attacker, state);
+            int hitCount = CollisionsExtension.OverlapSphere(
+                attacker.Position,
+                state.HitboxRadius,
+                _hitBuffer,
+                1 << LayerData.Environment);
+            PublishOverlapHits(attacker, state, hitCount, AttackType.Power);
+            state.Reset();
+        }
+
+        private void PublishOverlapHits(
+            ICharacterCombatRuntimeState attacker,
+            HitDetectionState state,
+            int hitCount,
+            AttackType attackType
+        )
+        {
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider hitbox = _hitBuffer[i];
                 _hitBuffer[i] = null;
-
-                if (hitCollider == null)
-                    continue;
-
-                ICharacterModel target = _context.GetModel(hitCollider);
-                if (target != null)
+                if (hitbox == null)
                 {
-                    if (!target.Enabled || target.CharacterID == attacker.CharacterID ||
-                        !state.HitTargets.Add(target.CharacterID))
+                    continue;
+                }
+
+                if (_characterViews.TryGetCharacterId(hitbox, out EntityId characterId))
+                {
+                    ICharacterModel target = _characters.GetModel(characterId);
+                    if (target == null)
                     {
                         continue;
                     }
 
-                    PublishCharacterHit(attacker, target, AttackType.Simple);
+                    ICharacterCombatRuntimeState targetCombat =
+                        target.GetState<ICharacterCombatRuntimeState>();
+                    if (targetCombat.Enabled &&
+                        targetCombat.CharacterID != attacker.CharacterID &&
+                        state.HitTargets.Add(targetCombat.CharacterID))
+                    {
+                        PublishCharacterHit(
+                            attacker,
+                            targetCombat,
+                            attackType);
+                    }
+
                     continue;
                 }
 
-                IInteractableChestView chest = _level.GetInteractableChest(hitCollider);
-                
-                if (!state.HitTargets.Add(chest.ChestID))
-                    continue;
-
-                PublishChestHit(attacker, chest, AttackType.Simple);
-            }
-        }
-
-        private void DetectPowerAttackHits(ICharacterModel attacker, HitDetectionState state)
-        {
-            if (state.Elapsed < state.ActiveWindowStart)
-                return;
-
-            PublishPowerAttackCharacterHits(attacker, state);
-
-            int hits = CollisionsExtension.OverlapSphere(attacker.Position,
-                state.HitboxRadius, _hitBuffer, 1 << LayerData.Environment);
-            
-            for (int i = 0; i < hits; i++)
-            {
-                Collider hitCollider = _hitBuffer[i];
-                _hitBuffer[i] = null;
-
-                IInteractableChestView chest = _level.GetInteractableChest(hitCollider);
-                Vector3 direction = chest.Position - attacker.Position;
-                
-                if (Mathf.Abs(direction.y) <= state.HitboxHeight)
-                    PublishChestHit(attacker, chest, AttackType.Power);
-            }
-
-            state.Reset();
-        }
-
-        private void PublishPowerAttackCharacterHits(ICharacterModel attacker, HitDetectionState state)
-        {
-            float radiusSqr = state.HitboxRadius * state.HitboxRadius;
-            IReadOnlyList<ICharacterModel> characters = _context.AllCharacters;
-            
-            for (int i = 0; i < characters.Count; i++)
-            {
-                ICharacterModel target = characters[i];
-                Vector3 direction = target.Position - attacker.Position;
-
-                if (Mathf.Abs(direction.y) > state.HitboxHeight)
-                    continue;
-
-                direction.y = 0f;
-
-                if (direction.sqrMagnitude > radiusSqr)
-                    continue;
-
-                PublishCharacterHit(attacker, target, AttackType.Power);
-            }
-        }
-
-        private void PublishCharacterHit(ICharacterModel attacker, ICharacterModel target, AttackType attackType)
-        {
-            if (!target.Enabled || target.CharacterID == attacker.CharacterID)
-                return;
-
-            Vector3 hitDirection = GetHorizontalDirection(target.Position - attacker.Position);
-            
-            if (hitDirection.sqrMagnitude < CMinimumDirectionSqrMagnitude)
-                hitDirection = GetHorizontalDirection(attacker.Forward);
-
-            _gameEventsBus.Publish(new OnHitDetectedEvent(new HitData(
-                HitObjectType.Character, attacker.CharacterID,
-                HitObjectType.Character, target.CharacterID,
-                attackType, hitDirection)));
-        }
-
-        private void PublishChestHit(ICharacterModel attacker, IInteractableChestView chest, AttackType attackType)
-        {
-            Vector3 hitDirection = GetHorizontalDirection(chest.Position - attacker.Position);
-            
-            if (hitDirection.sqrMagnitude < CMinimumDirectionSqrMagnitude)
-                hitDirection = GetHorizontalDirection(attacker.Forward);
-
-            _gameEventsBus.Publish(new OnHitDetectedEvent(new HitData(
-                HitObjectType.Character, attacker.CharacterID,
-                HitObjectType.Environment, chest.ChestID,
-                attackType, hitDirection)));
-        }
-
-        private void DetectEnvironmentCollisions()
-        {
-            IReadOnlyList<IInteractableChestView> chests = _level.InteractableChests;
-            for (int i = 0; i < chests.Count; i++)
-            {
-                IInteractableChestView chest = chests[i];
-                
-                if (!chest.TryConsumeCollision(out EnvironmentCollisionData collision) ||
-                    collision.ImpactSpeed < CMinimumImpactSpeed)
+                if (!_levelEntities.TryGetEntityId(hitbox, out EntityId entityId) ||
+                    !_levelEntities.TryGetEntity(
+                        entityId,
+                        out ILevelEntityView entity))
                 {
                     continue;
                 }
 
-                ICharacterModel target = GetCollisionTarget(collision.OtherCollider);
-                if (target == null || !target.Enabled)
+                Vector3 direction = entity.Position - attacker.Position;
+                if (attackType == AttackType.Power &&
+                    Mathf.Abs(direction.y) > state.HitboxHeight)
+                {
                     continue;
+                }
 
-                Vector3 hitDirection = target.Position - chest.Position;
-                
-                _gameEventsBus.Publish(new OnHitDetectedEvent(new HitData(
-                    HitObjectType.Environment, chest.ChestID,
-                    HitObjectType.Character, target.CharacterID,
-                    AttackType.Simple, hitDirection, collision.ImpactVelocity)));
+                if (!state.HitTargets.Add(entityId))
+                {
+                    continue;
+                }
+
+                PublishLevelEntityHit(attacker, entity, attackType);
             }
         }
 
-        private ICharacterModel GetCollisionTarget(Collider collider)
+        private void PublishPowerAttackCharacterHits(
+            ICharacterCombatRuntimeState attacker,
+            HitDetectionState state
+        )
         {
-            ICharacterModel target = _context.GetModel(collider);
-            if (target != null)
-                return target;
-
-            Rigidbody targetRigidbody = collider.attachedRigidbody;
-            if (targetRigidbody == null)
-                return null;
-
-            IReadOnlyList<ICharacterModel> characters = _context.AllCharacters;
+            float radiusSqr = state.HitboxRadius * state.HitboxRadius;
+            IReadOnlyList<ICharacterModel> characters = _characters.AllCharacters;
             for (int i = 0; i < characters.Count; i++)
             {
-                ICharacterModel character = characters[i];
-                
-                if (character.Hitbox.attachedRigidbody == targetRigidbody)
-                    return character;
+                ICharacterCombatRuntimeState target =
+                    characters[i].GetState<ICharacterCombatRuntimeState>();
+                Vector3 direction = target.Position - attacker.Position;
+                if (Mathf.Abs(direction.y) > state.HitboxHeight)
+                {
+                    continue;
+                }
+
+                direction.y = 0f;
+                if (direction.sqrMagnitude <= radiusSqr &&
+                    target.Enabled &&
+                    target.CharacterID != attacker.CharacterID &&
+                    state.HitTargets.Add(target.CharacterID))
+                {
+                    PublishCharacterHit(attacker, target, AttackType.Power);
+                }
+            }
+        }
+
+        private void PublishCharacterHit(
+            ICharacterCombatRuntimeState attacker,
+            ICharacterCombatRuntimeState target,
+            AttackType attackType
+        )
+        {
+            Vector3 direction = GetHorizontalDirection(target.Position - attacker.Position);
+            if (direction == Vector3.zero)
+            {
+                direction = GetHorizontalDirection(attacker.Forward);
             }
 
-            return null;
+            _events.Publish(new OnHitDetectedEvent(new HitData(
+                HitObjectType.Character,
+                attacker.CharacterID,
+                HitObjectType.Character,
+                target.CharacterID,
+                attackType,
+                direction)));
+        }
+
+        private void PublishLevelEntityHit(
+            ICharacterCombatRuntimeState attacker,
+            ILevelEntityView entity,
+            AttackType attackType
+        )
+        {
+            Vector3 direction = GetHorizontalDirection(entity.Position - attacker.Position);
+            if (direction == Vector3.zero)
+            {
+                direction = GetHorizontalDirection(attacker.Forward);
+            }
+
+            _events.Publish(new OnHitDetectedEvent(new HitData(
+                HitObjectType.Character,
+                attacker.CharacterID,
+                HitObjectType.LevelEntity,
+                entity.EntityId,
+                attackType,
+                direction)));
         }
 
         private void OnAttackStarted(OnSimpleAttackStartedEvent evt)
         {
-            if (!_states.TryGetValue(evt.CharacterID, out var state))
+            ICharacterModel attacker = _characters.GetModel(evt.CharacterID);
+            if (attacker == null || !_states.TryGetValue(evt.CharacterID, out HitDetectionState state))
+            {
                 return;
+            }
 
-            ICharacterModel      attacker = _context.GetModel(evt.CharacterID);
             SimpleAttackSettings settings = attacker.Data.Combat.SimpleAttack;
-
             state.BeginAttack(
                 settings.Duration * settings.HitboxStartNormalized,
                 settings.Duration * settings.HitboxEndNormalized,
-                settings.HitboxRange, settings.HitboxRadius);
+                settings.HitboxRange,
+                settings.HitboxRadius);
         }
 
         private void OnAttackEnded(OnSimpleAttackEndedEvent evt)
@@ -282,11 +296,17 @@ namespace Game.Core.Systems
 
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
-            if (!_states.TryGetValue(evt.CharacterID, out HitDetectionState state))
+            ICharacterModel attacker = _characters.GetModel(evt.CharacterID);
+            if (attacker == null || !_states.TryGetValue(evt.CharacterID, out HitDetectionState state))
+            {
                 return;
+            }
 
-            PowerAttackSettings settings = _context.GetModel(evt.CharacterID).Data.Combat.PowerAttack;
-            state.BeginPowerAttack(settings.WaveStartTime, settings.WaveRadius, settings.WaveHeight);
+            PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
+            state.BeginPowerAttack(
+                settings.WaveStartTime,
+                settings.WaveRadius,
+                settings.WaveHeight);
         }
 
         private void OnPowerAttackEnded(OnPowerAttackEndedEvent evt)
@@ -298,43 +318,37 @@ namespace Game.Core.Systems
             }
         }
 
-        private void RegisterExistingCharacters()
+        private void Register(EntityId characterId)
         {
-            var characters = _context.AllCharacters;
-            for (int i = 0; i < characters.Count; i++)
+            if (!_states.ContainsKey(characterId))
             {
-                Register(characters[i].CharacterID);
+                _states.Add(characterId, new HitDetectionState());
             }
         }
 
-        private void Register(Guid characterID)
-        {
-            if (!_states.ContainsKey(characterID))
-                _states[characterID] = new HitDetectionState();
-        }
-
-        private void Unregister(Guid characterID)
-            => _states.Remove(characterID);
+        private void Unregister(EntityId characterId)
+            => _states.Remove(characterId);
 
         private static Vector3 GetHorizontalDirection(Vector3 direction)
         {
             direction.y = 0f;
-            
-            if (direction.sqrMagnitude >= CMinimumDirectionSqrMagnitude)
-                direction.Normalize();
+            if (direction.sqrMagnitude < MinimumDirectionSqrMagnitude)
+            {
+                return Vector3.zero;
+            }
 
+            direction.Normalize();
             return direction;
         }
 
         public void Dispose()
         {
-            _gameEventsBus.Unsubscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
-            _gameEventsBus.Unsubscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
-            _gameEventsBus.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
-            _gameEventsBus.Unsubscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
-
-            _context.OnCharacterAdded   -= Register;
-            _context.OnCharacterRemoved -= Unregister;
+            _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
+            _events.Unsubscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
+            _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Unsubscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
+            _characters.OnCharacterAdded -= Register;
+            _characters.OnCharacterRemoved -= Unregister;
         }
     }
 }

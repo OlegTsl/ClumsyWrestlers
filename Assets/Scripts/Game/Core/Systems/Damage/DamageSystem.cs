@@ -1,29 +1,31 @@
 using Game.Core.Character;
-using Game.Core.Environment;
 using Game.Core.GameEvents;
 using Game.Core.Level;
+using Game.Core.Level.Entities;
 using UnityEngine;
 
 namespace Game.Core.Systems
 {
     public sealed class DamageSystem : IDamageSystem
     {
-        private const float CMinimumDirectionSqrMagnitude = 0.0001f;
+        private const float MinimumDirectionSqrMagnitude = 0.0001f;
 
-        private readonly GameEventsBus     _events;
-        private readonly ICharacterContext _characterContext;
-        private readonly ILevelModel       _level;
+        private readonly IGameEventsBus _events;
+        private readonly ICharacterContext _characters;
+        private readonly ILevelEntityRegistry _levelEntities;
+        private readonly ILevelImpactSettingsRegistry _impactSettings;
 
         public DamageSystem(
-            GameEventsBus     events,
-            ICharacterContext characterContext,
-            ILevelModel       level
+            IGameEventsBus events,
+            ICharacterContext characters,
+            ILevelEntityRegistry levelEntities,
+            ILevelImpactSettingsRegistry impactSettings
         )
         {
-            _events           = events;
-            _characterContext = characterContext;
-            _level            = level;
-
+            _events = events;
+            _characters = characters;
+            _levelEntities = levelEntities;
+            _impactSettings = impactSettings;
             _events.Subscribe<OnHitDetectedEvent>(OnHitDetected);
         }
 
@@ -35,73 +37,79 @@ namespace Game.Core.Systems
                 return;
             }
 
-            Vector3 force = CalculateForce(hit);
-            HitData resolvedHit = hit.WithForce(force);
-
+            HitData resolvedHit = hit.WithForce(CalculateForce(hit));
             ApplyForce(resolvedHit);
             ApplySourceReaction(resolvedHit);
-
             _events.Publish(new OnHitResolvedEvent(resolvedHit));
         }
 
-        private bool CanResolve(HitData hit)
+        private bool CanResolve(in HitData hit)
         {
             if (hit.SourceType == HitObjectType.Character)
             {
-                ICharacterModel source = _characterContext.GetModel(hit.SourceID);
-                if (source == null || !source.Enabled)
+                ICharacterModel source = _characters.GetModel(hit.SourceID);
+                if (source == null ||
+                    !source.GetState<ICharacterActivityState>().Enabled)
                 {
                     return false;
                 }
             }
+            else if (!_impactSettings.TryGetImpactSettings(hit.SourceID, out _))
+            {
+                return false;
+            }
 
             if (hit.TargetType == HitObjectType.Character)
             {
-                ICharacterModel target = _characterContext.GetModel(hit.TargetID);
-                return target != null && target.Enabled;
+                ICharacterModel target = _characters.GetModel(hit.TargetID);
+                return target != null &&
+                       target.GetState<ICharacterActivityState>().Enabled;
             }
 
-            return true;
+            return _impactSettings.TryGetImpactSettings(hit.TargetID, out _) &&
+                   _levelEntities.TryGetCapability(
+                       hit.TargetID,
+                       out IImpulseReceiverView _);
         }
 
-        private Vector3 CalculateForce(HitData hit)
+        private Vector3 CalculateForce(in HitData hit)
         {
             Vector3 direction = hit.Direction;
-
-            if (hit.SourceType == HitObjectType.Environment)
+            if (hit.SourceType == HitObjectType.LevelEntity)
             {
+                _impactSettings.TryGetImpactSettings(
+                    hit.SourceID,
+                    out LevelEntityImpactSettings sourceSettings);
                 direction.y = 1f;
-                return Normalize(direction) *
-                    _level.GetInteractableChest(hit.SourceID).Data.TargetImpactForce;
+                return Normalize(direction) * sourceSettings.TargetImpactForce;
             }
 
             float force = GetCharacterAttackForce(hit);
-            if (hit.TargetType == HitObjectType.Environment)
+            direction.y = hit.AttackType == AttackType.Power ? 1f : 0f;
+            if (hit.TargetType == HitObjectType.LevelEntity)
             {
-                direction.y = hit.AttackType == AttackType.Power ? 1f : 0f;
-                force *= _level.GetInteractableChest(hit.TargetID).Data.HitForceMultiplier;
-            }
-            else
-            {
-                direction.y = hit.AttackType == AttackType.Power ? 1f : 0f;
+                _impactSettings.TryGetImpactSettings(
+                    hit.TargetID,
+                    out LevelEntityImpactSettings targetSettings);
+                force *= targetSettings.HitForceMultiplier;
             }
 
             return Normalize(direction) * force;
         }
 
-        private float GetCharacterAttackForce(HitData hit)
+        private float GetCharacterAttackForce(in HitData hit)
         {
-            ICharacterModel attacker = _characterContext.GetModel(hit.SourceID);
+            ICharacterModel attacker = _characters.GetModel(hit.SourceID);
             return hit.AttackType == AttackType.Power
                 ? attacker.Data.Combat.PowerAttack.KnockbackForce
                 : attacker.Data.Combat.SimpleAttack.KnockbackForce;
         }
 
-        private void ApplyForce(HitData hit)
+        private void ApplyForce(in HitData hit)
         {
             if (hit.TargetType == HitObjectType.Character)
             {
-                if (hit.Force.sqrMagnitude >= CMinimumDirectionSqrMagnitude)
+                if (hit.Force.sqrMagnitude >= MinimumDirectionSqrMagnitude)
                 {
                     _events.Publish(new OnForceEvent(hit.TargetID, hit.Force));
                 }
@@ -110,27 +118,25 @@ namespace Game.Core.Systems
                 return;
             }
 
-            _level.GetInteractableChest(hit.TargetID).ApplyImpulse(hit.Force);
+            _events.Publish(new OnLevelEntityImpulseRequestedEvent(
+                hit.TargetID,
+                hit.Force));
         }
 
-        private void ApplySourceReaction(HitData hit)
+        private void ApplySourceReaction(in HitData hit)
         {
-            if (hit.SourceType == HitObjectType.Environment)
+            if (hit.SourceType == HitObjectType.LevelEntity)
             {
-                _level.GetInteractableChest(hit.SourceID)
-                    .DampenAfterImpact(hit.ImpactVelocity);
+                _events.Publish(new OnLevelEntityDampingRequestedEvent(
+                    hit.SourceID,
+                    hit.ImpactVelocity));
             }
         }
 
         private static Vector3 Normalize(Vector3 direction)
-        {
-            if (direction.sqrMagnitude < CMinimumDirectionSqrMagnitude)
-            {
-                return Vector3.zero;
-            }
-
-            return direction.normalized;
-        }
+            => direction.sqrMagnitude < MinimumDirectionSqrMagnitude
+                ? Vector3.zero
+                : direction.normalized;
 
         public void Dispose()
             => _events.Unsubscribe<OnHitDetectedEvent>(OnHitDetected);

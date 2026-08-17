@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using Game.Core.Entities;
 using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
@@ -8,7 +8,7 @@ namespace Game.Core.Systems
     {
         private const int CExpectedTargetsPerAttack = 16;
 
-        public readonly HashSet<Guid> HitTargets = new(CExpectedTargetsPerAttack);
+        public readonly HashSet<EntityId> HitTargets = new(CExpectedTargetsPerAttack);
 
         public bool  IsActive          { get; set; }
         public AttackType AttackType    { get; private set; }

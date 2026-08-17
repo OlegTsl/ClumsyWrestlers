@@ -1,4 +1,4 @@
-using System;
+using Game.Core.Entities;
 using UnityEngine;
 
 namespace Game.Core.GameEvents
@@ -11,30 +11,32 @@ namespace Game.Core.GameEvents
 
     public readonly struct OnPowerAttackRequestedEvent
     {
-        public readonly Guid CharacterID { get; }
-        public OnPowerAttackRequestedEvent(Guid characterID)
+        public EntityId CharacterID { get; }
+
+        public OnPowerAttackRequestedEvent(EntityId characterID)
             => CharacterID = characterID;
     }
 
     public readonly struct OnPowerAttackStartedEvent
     {
-        public Guid          CharacterID   { get; }
+        public EntityId CharacterID { get; }
         public AnimationClip AnimationClip { get; }
 
         public OnPowerAttackStartedEvent(
-            Guid          characterID,
+            EntityId characterID,
             AnimationClip animationClip
         )
         {
-            CharacterID   = characterID;
+            CharacterID = characterID;
             AnimationClip = animationClip;
         }
     }
 
     public readonly struct OnPowerAttackEndedEvent
     {
-        public Guid CharacterID { get; }
-        public OnPowerAttackEndedEvent(Guid characterID)
+        public EntityId CharacterID { get; }
+
+        public OnPowerAttackEndedEvent(EntityId characterID)
             => CharacterID = characterID;
     }
 }

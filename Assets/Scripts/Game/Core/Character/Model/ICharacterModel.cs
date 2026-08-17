@@ -1,42 +1,10 @@
-using System;
-using UnityEngine;
+using Game.Core.Entities;
 
 namespace Game.Core.Character
 {
-    public interface ICharacterModel : IDisposable
+    public interface ICharacterModel
     {
-        void SetPosition(Vector3 position);
-        void SetRotation(Quaternion rotation);
-        void SetEnabled(bool enabled);
-        void SetMovable(bool isMovable);
-        void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
-        void SetAnimatorBool(int id, bool value);
-        void SetAnimatorTrigger(int id);
-        void SetAttackHandIk(AttackHand hand, Vector3 position, float weight);
-        void ClearAttackHandIk();
-        void ApplyVelocity(Vector3 velocity);
-        void SetAimEnabled(bool enabled);
-        void SetAimPositions(Vector3[] positions);
-        void SetAimPositionCount(int count);
-        void SetVisualLean(Quaternion rotation);
-
-        Guid          CharacterID     { get; }
-        CharacterData Data            { get; }
-        Collider      Hitbox          { get; }
-        Transform     Transform       { get; }
-        LineRenderer  Aim             { get; }
-        Vector3       Forward         { get; }
-        Vector3       AttackOrigin    { get; }
-        Vector3       Position        { get; }
-        Quaternion    Rotation        { get; }
-        bool          Enabled         { get; }
-        bool          IsMovable       { get; }
-
-        bool IsGrounded();
-        bool IsMoving();
-
-        Vector3 TransformDirection(Vector3 direction);
-        Vector3 InverseTransformDirection(Vector3 direction);
-        Vector3 GetVelocity();
+        EntityId CharacterID { get; }
+        CharacterData Data { get; }
     }
 }

@@ -6,7 +6,7 @@ namespace Game.Core.GameEvents
     {
         public override void InstallBindings()
         {
-            Container.Bind<GameEventsBus>().AsSingle();
+            Container.BindInterfacesAndSelfTo<GameEventsBus>().AsSingle();
         }
     }
 }

@@ -1,47 +1,77 @@
-using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
-using UnityEngine;
+using Game.Core.Entities;
 
 namespace Game.Core.Character
 {
-    public class CharacterBuilder : ICharacterBuilder
+    public sealed class CharacterBuilder : ICharacterBuilder
     {
-        private readonly IAssetManager     _assetManager;
-        private readonly ICharacterContext _context;
+        private readonly IAssetManager _assetManager;
+        private readonly IEntityIdAllocator _entityIdAllocator;
+        private readonly ICharacterContext _characterContext;
+        private readonly ICharacterViewContext _viewContext;
 
         public CharacterBuilder(
-            IAssetManager     assetManager,
-            ICharacterContext context
+            IAssetManager assetManager,
+            IEntityIdAllocator entityIdAllocator,
+            ICharacterContext characterContext,
+            ICharacterViewContext viewContext
         )
         {
             _assetManager = assetManager;
-            _context      = context;
+            _entityIdAllocator = entityIdAllocator;
+            _characterContext = characterContext;
+            _viewContext = viewContext;
         }
 
-        public async UniTask<ICharacterModel> BuidCharacter(string name)
+        public UniTask<ICharacterRuntime> BuildCharacterAsync(
+            string address,
+            CancellationToken cancellationToken
+        )
+            => BuildCharacterAsync(address, _entityIdAllocator.Allocate(), cancellationToken);
+
+        public async UniTask<ICharacterRuntime> BuildCharacterAsync(
+            string address,
+            EntityId characterId,
+            CancellationToken cancellationToken
+        )
         {
-            var view = await LoadView(name);
-            if (view == null)
-                return null;
-
-            var character = new CharacterModel(view, Guid.NewGuid());
-            character.SetEnabled(false);
-
-            _context.AddCharacter(character);
-            
-            return character;
-        }
-
-        private async UniTask<ICharacterView> LoadView(string name)
-        {
-            var view = await _assetManager.LoadView<CharacterView>(name, null);
-            if (view == null)
+            if (!characterId.IsValid)
             {
-                Debug.LogError("Failed to load character");
-                return null;
+                throw new System.ArgumentException(
+                    "Character id must be valid.",
+                    nameof(characterId));
             }
-            return view;
-        } 
+
+            IViewLease<CharacterView> viewLease = null;
+            try
+            {
+                viewLease = await _assetManager.InstantiateViewAsync<CharacterView>(
+                    address,
+                    null,
+                    cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                CharacterView view = viewLease.View;
+                view.Hide();
+
+                CharacterModel model = new(characterId, view.Data);
+                model.GetState<ICharacterPhysicsState>()
+                    .SynchronizePhysics(view.CapturePhysicsSnapshot());
+
+                CharacterRuntime runtime = new(
+                    model,
+                    viewLease,
+                    _characterContext,
+                    _viewContext);
+                viewLease = null;
+                return runtime;
+            }
+            finally
+            {
+                viewLease?.Dispose();
+            }
+        }
     }
 }

@@ -1,71 +1,100 @@
-using UnityEngine;
-using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
+using UnityEngine;
 
 namespace Game.Common.Localization
 {
-    public class LocalizationService : ILocalizationService
+    public sealed class LocalizationService : ILocalizationService
     {
-        private LocalizationData _commonLocalization = null;
-
         private readonly IAssetManager _assetManager;
-
-        private readonly Dictionary<string, string> _commonLocales = new Dictionary<string, string>
+        private readonly Dictionary<string, string> _commonLocales = new()
         {
             { "en", "common_locales_en" },
             { "ru", "common_locales_ru" }
         };
 
+        private IAssetLease<LocalizationData> _commonLocalizationLease;
+        private CancellationTokenSource _loadCancellation;
+
         public LocalizationService(IAssetManager assetManager)
             => _assetManager = assetManager;
 
-        public async UniTask SetDefaultLanguage()
+        public UniTask SetDefaultLanguageAsync(CancellationToken cancellationToken)
         {
-            var systemLanguage = Application.systemLanguage;
+            string languageCode = Application.systemLanguage == SystemLanguage.Russian
+                ? "ru"
+                : "en";
+            return SetLanguageAsync(languageCode, cancellationToken);
+        }
 
-            string commonAddress = systemLanguage switch
+        public async UniTask SetLanguageAsync(
+            string languageCode,
+            CancellationToken cancellationToken
+        )
+        {
+            CancelCurrentLoad();
+            _loadCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationTokenSource currentLoad = _loadCancellation;
+            IAssetLease<LocalizationData> nextLease = null;
+
+            try
             {
-                SystemLanguage.Russian => _commonLocales["ru"],
-                SystemLanguage.English => _commonLocales["en"],
-                _ => _commonLocales["en"]
-            };
+                string address = _commonLocales.TryGetValue(languageCode, out string localized)
+                    ? localized
+                    : _commonLocales["en"];
+                nextLease = await _assetManager.LoadAssetAsync<LocalizationData>(
+                    address,
+                    currentLoad.Token);
+                currentLoad.Token.ThrowIfCancellationRequested();
 
-            await LoadLocalizations(commonAddress);
-        }
-
-        public async UniTask SetLanguage(string languageCode)
-        {
-            string commonAddress = _commonLocales["en"];
-            if (_commonLocales.TryGetValue(languageCode, out var common))
-                commonAddress = common;
-
-            await LoadLocalizations(commonAddress);
-        }
-
-        private async UniTask LoadLocalizations(string commonAddress)
-        {
-            _commonLocalization = await _assetManager.LoadAsset<LocalizationData>(commonAddress);
+                IAssetLease<LocalizationData> previousLease = _commonLocalizationLease;
+                _commonLocalizationLease = nextLease;
+                nextLease = null;
+                previousLease?.Dispose();
+            }
+            finally
+            {
+                nextLease?.Dispose();
+                if (ReferenceEquals(_loadCancellation, currentLoad))
+                {
+                    _loadCancellation = null;
+                    currentLoad.Dispose();
+                }
+            }
         }
 
         public string GetTranslation(string key, params object[] args)
         {
-            var value = TryGetFrom(_commonLocalization, key);
-            if (value != null) return string.Format(value, args);
-            
-            return key;
+            string value = TryGetFrom(_commonLocalizationLease?.Asset, key);
+            return value == null ? key : string.Format(value, args);
         }
 
         private static string TryGetFrom(LocalizationData data, string key)
         {
-            if (data == null) return null;
-
-            var v = data.GetValue(key);
-
-            if (string.IsNullOrEmpty(v) || v == key)
+            if (data == null)
+            {
                 return null;
+            }
 
-            return v;
+            string value = data.GetValue(key);
+            return string.IsNullOrEmpty(value) || value == key ? null : value;
+        }
+
+        private void CancelCurrentLoad()
+        {
+            CancellationTokenSource cancellation = _loadCancellation;
+            _loadCancellation = null;
+            cancellation?.Cancel();
+            cancellation?.Dispose();
+        }
+
+        public void Dispose()
+        {
+            CancelCurrentLoad();
+            _commonLocalizationLease?.Dispose();
+            _commonLocalizationLease = null;
         }
     }
 }

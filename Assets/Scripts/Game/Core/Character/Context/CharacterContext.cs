@@ -1,51 +1,41 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Game.Core.Entities;
 
 namespace Game.Core.Character
 {
     public sealed class CharacterContext : ICharacterContext
     {
-        private readonly Dictionary<Guid, ICharacterModel>     _characters     = new();
-        private readonly Dictionary<Collider, ICharacterModel> _colliders      = new();
-        private readonly List<ICharacterModel>                 _charactersList = new();
+        private readonly Dictionary<EntityId, ICharacterModel> _characters = new();
+        private readonly List<ICharacterModel> _charactersList = new();
 
-        public IReadOnlyList<ICharacterModel> AllCharacters
-            => _charactersList;
+        public IReadOnlyList<ICharacterModel> AllCharacters => _charactersList;
 
-        public event Action<Guid> OnCharacterAdded;
-        public event Action<Guid> OnCharacterRemoved;
+        public event Action<EntityId> OnCharacterAdded;
+        public event Action<EntityId> OnCharacterRemoved;
 
         public void AddCharacter(ICharacterModel character)
         {
-            _characters[character.CharacterID] = character;
-            _colliders[character.Hitbox]       = character;
+            _characters.Add(character.CharacterID, character);
             _charactersList.Add(character);
-
             OnCharacterAdded?.Invoke(character.CharacterID);
         }
 
-        public void RemoveCharacter(Guid characterID)
+        public void RemoveCharacter(EntityId characterId)
         {
-            if (_characters.TryGetValue(characterID, out var character))
+            if (!_characters.TryGetValue(characterId, out ICharacterModel character))
             {
-                _characters.Remove(characterID);
-                _colliders.Remove(character.Hitbox);
-                _charactersList.Remove(character);
-
-                OnCharacterRemoved?.Invoke(character.CharacterID);
+                return;
             }
+
+            _characters.Remove(characterId);
+            _charactersList.Remove(character);
+            OnCharacterRemoved?.Invoke(characterId);
         }
 
-        public ICharacterModel GetModel(Guid characterID)
+        public ICharacterModel GetModel(EntityId characterId)
         {
-            _characters.TryGetValue(characterID, out var model);
-            return model;
-        }
-
-        public ICharacterModel GetModel(Collider collider)
-        {
-            _colliders.TryGetValue(collider, out var model);
+            _characters.TryGetValue(characterId, out ICharacterModel model);
             return model;
         }
     }

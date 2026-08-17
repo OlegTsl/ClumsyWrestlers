@@ -31,7 +31,15 @@ namespace Game.Core.Round
                 return;
 
             DiContainer roundContainer = _rootContainer.CreateSubContainer();
-            roundContainer.Bind<ILevelModel>().FromInstance(_levelController.Level);
+            ILevelModel level = _levelController.Level;
+            roundContainer.Bind<ILevelEntityRegistry>()
+                .FromInstance((ILevelEntityRegistry)level);
+            roundContainer.Bind<ILevelFixedTickSource>()
+                .FromInstance((ILevelFixedTickSource)level);
+            roundContainer.Bind<ILevelImpactSettingsRegistry>()
+                .FromInstance((ILevelImpactSettingsRegistry)level);
+            roundContainer.Bind<ILevelCollisionBuffer>()
+                .FromInstance((ILevelCollisionBuffer)level);
             SystemsInstaller.Install(roundContainer);
             roundContainer.Bind<Kernel>().AsSingle();
             roundContainer.ResolveRoots();

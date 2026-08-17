@@ -2,25 +2,30 @@ using UnityEngine;
 
 namespace Game.Core.Systems
 {
-    public class LookSystem : ILookSystem
+    public sealed class LookSystem : ILookSystem
     {
+        private static readonly Vector3 Offset = new(0f, 0f, -3f);
+
         private readonly Transform _character;
         private readonly Transform _camera;
-        private readonly Vector3   _offset = new Vector3(0f, 0f, -3f);
 
         public LookSystem(Transform character, Transform camera)
         {
             _character = character;
-            _camera    = camera;
+            _camera = camera;
         }
 
         public void LateTick()
         {
+            Vector3 characterPosition = _character.position;
             _camera.position = new Vector3(
-                _character.position.x + _offset.x, 
-                _camera.position.y, 
-                _character.position.z + _offset.z
-            );
+                characterPosition.x + Offset.x,
+                _camera.position.y,
+                characterPosition.z + Offset.z);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

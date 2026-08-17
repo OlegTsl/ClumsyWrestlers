@@ -1,126 +1,147 @@
 using Game.Core.Character;
 using Game.Core.Data;
+using Game.Core.Entities;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
 
 namespace Game.Core.Systems
 {
-    public class AnimationSystem : IAnimationSystem, ITickable
+    public sealed class AnimationSystem : IAnimationSystem, ITickable
     {
-        private readonly GameEventsBus     _events;
-        private readonly ICharacterContext _context;
+        private readonly IGameEventsBus _events;
+        private readonly ICharacterContext _models;
+        private readonly ICharacterViewContext _views;
 
         public AnimationSystem(
-            GameEventsBus     events,
-            ICharacterContext context
+            IGameEventsBus events,
+            ICharacterContext models,
+            ICharacterViewContext views
         )
         {
-            _events  = events;
-            _context = context;
-            
+            _events = events;
+            _models = models;
+            _views = views;
+
             _events.Subscribe<OnJumpEvent>(OnJump);
             _events.Subscribe<OnFallEvent>(OnFall);
             _events.Subscribe<OnMoveEvent>(OnMove);
             _events.Subscribe<OnHitEvent>(OnHit);
             _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
             _events.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
+            _events.Subscribe<OnAttackHandIkEvent>(OnAttackHandIk);
+            _events.Subscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);
+            _events.Subscribe<OnAimStateChangedEvent>(OnAimStateChanged);
         }
 
         private void OnJump(OnJumpEvent evt)
-        {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
-                return;
-
-            character.SetAnimatorTrigger(AnimationData.JumpTrigger);
-        }
+            => SetTrigger(evt.CharacterID, AnimationData.JumpTrigger);
 
         private void OnFall(OnFallEvent evt)
-        {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
-                return;
-
-            character.SetAnimatorTrigger(AnimationData.FallTrigger);
-        }
+            => SetTrigger(evt.CharacterID, AnimationData.FallTrigger);
 
         private void OnMove(OnMoveEvent evt)
         {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
-                return;
-
-            character.SetAnimatorBool(AnimationData.MoveInput,
-                evt.Direction != Vector3.zero);
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            view?.SetAnimatorBool(AnimationData.MoveInput, evt.Direction != Vector3.zero);
         }
 
         private void OnHit(OnHitEvent evt)
-        {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
-                return;
-
-            character.SetAnimatorTrigger(AnimationData.HitTrigger);
-        }
+            => SetTrigger(evt.CharacterID, AnimationData.HitTrigger);
 
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
+            ICharacterModel model = _models.GetModel(evt.CharacterID);
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            if (model == null || view == null)
+            {
                 return;
+            }
 
-            PowerAttackSettings settings = character.Data.Combat.PowerAttack;
-            if (settings == null)
-                return;
-
-            character.SetAnimatorFloat(AnimationData.PowerAttackSpeed,
-                settings.AnimationSpeed, 0f, Time.deltaTime);
-            character.SetAnimatorTrigger(AnimationData.PowerAttackTrigger);
+            PowerAttackSettings settings = model.Data.Combat.PowerAttack;
+            view.SetAnimatorFloat(
+                AnimationData.PowerAttackSpeed,
+                settings.AnimationSpeed,
+                0f,
+                Time.deltaTime);
+            view.SetAnimatorTrigger(AnimationData.PowerAttackTrigger);
         }
 
         private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
         {
-            var character = _context.GetModel(evt.CharacterID);
-            if (character == null || !character.Enabled)
+            ICharacterModel model = _models.GetModel(evt.CharacterID);
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            if (model == null || view == null)
+            {
                 return;
+            }
 
-            SimpleAttackSettings settings = character.Data.Combat.SimpleAttack;
-            if (settings == null)
-                return;
-
-            character.SetAnimatorFloat(AnimationData.SimpleAttackSpeed,
-                settings.AnimationSpeed, 0f, Time.deltaTime);
-            character.SetAnimatorBool(AnimationData.MirrorPunch, evt.IsMirrored);
-            character.SetAnimatorTrigger(AnimationData.PunchTrigger);
+            SimpleAttackSettings settings = model.Data.Combat.SimpleAttack;
+            view.SetAnimatorFloat(
+                AnimationData.SimpleAttackSpeed,
+                settings.AnimationSpeed,
+                0f,
+                Time.deltaTime);
+            view.SetAnimatorBool(AnimationData.MirrorPunch, evt.IsMirrored);
+            view.SetAnimatorTrigger(AnimationData.PunchTrigger);
         }
+
+        private void OnAttackHandIk(OnAttackHandIkEvent evt)
+        {
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            view?.SetAttackHandIk(evt.Hand, evt.Position, evt.Weight);
+        }
+
+        private void OnAttackHandIkCleared(OnAttackHandIkClearedEvent evt)
+            => _views.GetView(evt.CharacterID)?.ClearAttackHandIk();
+
+        private void OnAimStateChanged(OnAimStateChangedEvent evt)
+            => _views.GetView(evt.CharacterID)?.SetAimEnabled(evt.IsAiming);
 
         public void Tick()
         {
-            var characters = _context.AllCharacters;
-            for (int idx = 0; idx < characters.Count; idx++)
+            var characters = _models.AllCharacters;
+            for (int i = 0; i < characters.Count; i++)
             {
-                var character = characters[idx];
-                if (!character.Enabled)
+                ICharacterModel model = characters[i];
+                ICharacterPresentationState presentation =
+                    model.GetState<ICharacterPresentationState>();
+                if (!presentation.Enabled)
+                {
                     continue;
+                }
 
-                UpdateMovementAnimation(character);
+                ICharacterView view = _views.GetView(model.CharacterID);
+                if (view == null)
+                {
+                    continue;
+                }
+
+                Vector3 horizontalVelocity = presentation.Velocity;
+                horizontalVelocity.y = 0f;
+                float speed = horizontalVelocity.sqrMagnitude < 0.01f
+                    ? 0f
+                    : horizontalVelocity.magnitude;
+                view.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
+                view.SetAnimatorBool(
+                    AnimationData.Grounded,
+                    presentation.IsGrounded);
             }
         }
 
-        private void UpdateMovementAnimation(ICharacterModel model)
+        private void SetTrigger(EntityId characterId, int trigger)
         {
-            var velocity = model.GetVelocity();
+            ICharacterView view = GetEnabledView(characterId);
+            view?.SetAnimatorTrigger(trigger);
+        }
 
-            Vector3 worldVelocity = velocity;
-            worldVelocity.y       = 0;
-            
-            float speed = worldVelocity.magnitude;
-            if (speed < 0.1f)
-                speed = 0f;
-            
-            model.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
-            model.SetAnimatorBool(AnimationData.Grounded, model.IsGrounded());
+        private ICharacterView GetEnabledView(EntityId characterId)
+        {
+            ICharacterModel model = _models.GetModel(characterId);
+            return model != null &&
+                   model.GetState<ICharacterActivityState>().Enabled
+                ? _views.GetView(characterId)
+                : null;
         }
 
         public void Dispose()
@@ -131,6 +152,9 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnHitEvent>(OnHit);
             _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
             _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
+            _events.Unsubscribe<OnAttackHandIkEvent>(OnAttackHandIk);
+            _events.Unsubscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);
+            _events.Unsubscribe<OnAimStateChangedEvent>(OnAimStateChanged);
         }
     }
 }

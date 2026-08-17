@@ -8,11 +8,11 @@ namespace Game.Core.Systems
     {
         private const float CMinimumSqrMagnitude = 0.0001f;
 
-        private readonly GameEventsBus     _events;
+        private readonly IGameEventsBus     _events;
         private readonly ICharacterContext _context;
 
         public SlamAttackSystem(
-            GameEventsBus     events,
+            IGameEventsBus     events,
             ICharacterContext context
         )
         {
@@ -25,16 +25,24 @@ namespace Game.Core.Systems
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
             ICharacterModel attacker = _context.GetModel(evt.CharacterID);
-            if (attacker == null || !attacker.Enabled)
+            if (attacker == null)
+            {
+                return;
+            }
+
+            ICharacterCombatRuntimeState combat =
+                attacker.GetState<ICharacterCombatRuntimeState>();
+            if (!combat.Enabled)
             {
                 return;
             }
 
             _events.Publish(new OnForceEvent(
-                attacker.CharacterID, CalculateLaunchVelocity(attacker)));
+                attacker.CharacterID, CalculateLaunchVelocity(combat)));
         }
 
-        private static Vector3 CalculateLaunchVelocity(ICharacterModel attacker)
+        private static Vector3 CalculateLaunchVelocity(
+            ICharacterCombatRuntimeState attacker)
         {
             PowerAttackSettings settings = attacker.Data.Combat.PowerAttack;
             Vector3 direction            = attacker.Forward;

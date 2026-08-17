@@ -1,172 +1,280 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.Views;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using Object = UnityEngine.Object;
 
 namespace Game.Common.AssetsManager
 {
-    public class AssetManager : IAssetManager
+    public sealed class AssetManager : IAssetManager
     {
-        private readonly Dictionary<string, AssetRef> _assetCache = new Dictionary<string, AssetRef>();
+        private readonly Dictionary<AssetKey, AssetEntry> _assetEntries = new();
 
-        public async UniTask<T> LoadView<T>(string address, Transform parent = null)
-            where T : class, IView
+        private bool _isDisposed;
+
+        public async UniTask<IAssetLease<T>> LoadAssetAsync<T>(
+            string address,
+            CancellationToken cancellationToken
+        ) where T : Object
         {
-            if (!_assetCache.TryGetValue(address, out var assetRef))
+            ThrowIfDisposed();
+
+            AssetKey key = new(address, typeof(T));
+            AssetEntry entry = GetOrCreateEntry<T>(key, address);
+            entry.PendingConsumers++;
+
+            try
             {
-                var prefab = await LoadAsset<GameObject>(address);
-                if (prefab == null)
-                    return null;
+                await entry.Handle.ToUniTask(cancellationToken: cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
 
-                assetRef = _assetCache[address];
-            }
-
-            var prefabGo = (GameObject)assetRef.Object.Result;
-            if (prefabGo == null)
-                return null;
-            
-            var instance = Object.Instantiate(prefabGo, parent, false);
-            if (instance == null)
-                return null;
-
-
-            var view = instance.GetComponent<T>();
-            if (view == null)
-            {
-                Debug.LogError($"Loaded asset at address {address} does not implement {typeof(T)}.");
-                Object.Destroy(instance);
-                return null;
-            }
-            
-            assetRef.RefCount++;
-
-            bool disposed = false;
-            view.DisposeAction = () =>
-            {
-                if (disposed) return;
-                disposed = true;
-
-                if (instance) Object.Destroy(instance);
-
-                if (_assetCache.TryGetValue(address, out var ar))
+                if (entry.Handle.Status != AsyncOperationStatus.Succeeded)
                 {
-                    ar.RefCount--;
-                    if (ar.RefCount <= 0)
-                    {
-                        Addressables.Release(ar.Object);
-                        _assetCache.Remove(address);
-                        Debug.Log($"Asset at address {address} unloaded.");
-                    }
+                    throw new InvalidOperationException(
+                        $"[AssetManager] Failed to load '{address}' as {typeof(T).Name}.");
                 }
-            };
 
-            return view;
+                if (!_assetEntries.TryGetValue(key, out AssetEntry currentEntry) ||
+                    !ReferenceEquals(currentEntry, entry))
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                entry.ActiveLeases++;
+                return new AssetLease<T>(this, key, entry, (T)entry.Handle.Result);
+            }
+            finally
+            {
+                entry.PendingConsumers--;
+                TryReleaseUnusedEntry(key, entry);
+            }
         }
 
-        public async UniTask<T> LoadAsset<T>(string address) where T : class
+        public async UniTask<IViewLease<TView>> InstantiateViewAsync<TView>(
+            string address,
+            Transform parent,
+            CancellationToken cancellationToken
+        ) where TView : class, IView
         {
+            IAssetLease<ViewPrefabAsset> prefabLease = null;
+            MonoBehaviour instance = null;
+
+            try
+            {
+                prefabLease = await LoadAssetAsync<ViewPrefabAsset>(address, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!(prefabLease.Asset.ViewPrefab is TView))
+                {
+                    throw new InvalidOperationException(
+                        $"[AssetManager] View asset '{address}' is not {typeof(TView).Name}.");
+                }
+
+                instance = Object.Instantiate(
+                    prefabLease.Asset.ViewPrefab,
+                    parent,
+                    false);
+                return new ViewLease<TView>(prefabLease, instance, (TView)(object)instance);
+            }
+            catch
+            {
+                if (instance != null)
+                {
+                    Object.Destroy(instance.gameObject);
+                }
+
+                prefabLease?.Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+
+            foreach (AssetEntry entry in _assetEntries.Values)
+            {
+                if (entry.Handle.IsValid())
+                {
+                    Addressables.Release(entry.Handle);
+                }
+
+                entry.IsReleased = true;
+            }
+
+            _assetEntries.Clear();
+        }
+
+        private AssetEntry GetOrCreateEntry<T>(AssetKey key, string address) where T : Object
+        {
+            if (_assetEntries.TryGetValue(key, out AssetEntry entry))
+            {
+                return entry;
+            }
+
             AsyncOperationHandle<T> handle = Addressables.LoadAssetAsync<T>(address);
-            await handle.Task;
-            if (handle.Status == AsyncOperationStatus.Succeeded)
+            entry = new AssetEntry(handle);
+            _assetEntries.Add(key, entry);
+            return entry;
+        }
+
+        private void Release(AssetKey key, AssetEntry entry)
+        {
+            if (entry.IsReleased || entry.ActiveLeases <= 0)
             {
-                _assetCache[address] = new AssetRef
-                {
-                    Object   = handle,
-                    RefCount = 1
-                };
-                return handle.Result;
+                return;
             }
-            else
+
+            entry.ActiveLeases--;
+            TryReleaseUnusedEntry(key, entry);
+        }
+
+        private void TryReleaseUnusedEntry(AssetKey key, AssetEntry entry)
+        {
+            if (_isDisposed || entry.IsReleased || entry.PendingConsumers > 0 ||
+                entry.ActiveLeases > 0)
             {
-                Debug.LogError($"Failed to load asset at address {address}");
-                return null;
+                return;
+            }
+
+            if (!_assetEntries.TryGetValue(key, out AssetEntry currentEntry) ||
+                !ReferenceEquals(currentEntry, entry))
+            {
+                return;
+            }
+
+            _assetEntries.Remove(key);
+            if (entry.Handle.IsValid())
+            {
+                Addressables.Release(entry.Handle);
+            }
+
+            entry.IsReleased = true;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(AssetManager));
             }
         }
 
-        public async UniTask<T> LoadAsset<T>(string address, Transform parent) where T : class
+        private readonly struct AssetKey : IEquatable<AssetKey>
         {
-            if (_assetCache.TryGetValue(address, out AssetRef assetRef))
-            {
-                var loadedAsset = assetRef.Object;
-                var instance = GameObject.Instantiate((GameObject)loadedAsset.Result, parent, false);
+            private readonly string _address;
+            private readonly Type _assetType;
 
-                if (instance != null)
+            public AssetKey(string address, Type assetType)
+            {
+                _address = address;
+                _assetType = assetType;
+            }
+
+            public bool Equals(AssetKey other)
+                => string.Equals(_address, other._address, StringComparison.Ordinal) &&
+                   _assetType == other._assetType;
+
+            public override bool Equals(object obj)
+                => obj is AssetKey other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
                 {
-                    instance.transform.SetParent(parent);
+                    return ((_address != null ? _address.GetHashCode() : 0) * 397) ^
+                           (_assetType != null ? _assetType.GetHashCode() : 0);
+                }
+            }
+        }
+
+        private sealed class AssetEntry
+        {
+            public AsyncOperationHandle Handle { get; }
+            public int PendingConsumers { get; set; }
+            public int ActiveLeases { get; set; }
+            public bool IsReleased { get; set; }
+
+            public AssetEntry(AsyncOperationHandle handle)
+                => Handle = handle;
+        }
+
+        private sealed class AssetLease<T> : IAssetLease<T> where T : Object
+        {
+            private AssetManager _owner;
+            private readonly AssetKey _key;
+            private readonly AssetEntry _entry;
+
+            public T Asset { get; }
+
+            public AssetLease(AssetManager owner, AssetKey key, AssetEntry entry, T asset)
+            {
+                _owner = owner;
+                _key = key;
+                _entry = entry;
+                Asset = asset;
+            }
+
+            public void Dispose()
+            {
+                AssetManager owner = _owner;
+                if (owner == null)
+                {
+                    return;
                 }
 
-                assetRef.RefCount++;
-                return instance is T ? instance as T : instance.GetComponent<T>();
+                _owner = null;
+                owner.Release(_key, _entry);
             }
-            else
-            {
-                var gameObject = await LoadAsset<GameObject>(address);
-                var instance   = GameObject.Instantiate(gameObject, parent, false);
+        }
 
-                if (instance != null)
+        private sealed class ViewLease<TView> : IViewLease<TView>
+            where TView : class, IView
+        {
+            private IAssetLease<ViewPrefabAsset> _prefabLease;
+
+            public TView View { get; }
+            public GameObject GameObject { get; private set; }
+
+            public ViewLease(
+                IAssetLease<ViewPrefabAsset> prefabLease,
+                MonoBehaviour instance,
+                TView view
+            )
+            {
+                _prefabLease = prefabLease;
+                GameObject = instance.gameObject;
+                View = view;
+            }
+
+            public void Dispose()
+            {
+                IAssetLease<ViewPrefabAsset> prefabLease = _prefabLease;
+                if (prefabLease == null)
                 {
-                    instance.transform.SetParent(parent);
- 
-                    if (instance is T)
-                        return instance as T;
-
-                    var view = instance.GetComponent<T>();
-                    if (view != null)
-                        return view;
-                    else
-                    {
-                        Debug.LogError($"Loaded asset at address {address} does not implement {typeof(T)} interface.");
-                        Addressables.Release(instance);
-                        return null;
-                    }
+                    return;
                 }
-            }
 
-            return null;
-        }
-
-        public void UnloadAsset(string address)
-        {
-            if (_assetCache.TryGetValue(address, out AssetRef assetRef))
-            {
-                assetRef.RefCount--;
-                if (assetRef.RefCount <= 0)
+                _prefabLease = null;
+                GameObject gameObject = GameObject;
+                GameObject = null;
+                if (gameObject != null)
                 {
-                    Addressables.Release(assetRef.Object);
-                    _assetCache.Remove(address);
-                    Debug.Log($"Asset at address {address} unloaded.");
+                    Object.Destroy(gameObject);
                 }
-            }
-        }
 
-        public async UniTask PrewarmAssets<T>(List<string> addresses) where T : class
-        {
-            var tasks = new List<UniTask>();
-
-            foreach (var address in addresses)
-            {
-                tasks.Add(LoadAsset<T>(address));
+                prefabLease.Dispose();
             }
-            
-            await UniTask.WhenAll(tasks);
-        }
-
-        public void ClearCache()
-        {
-            foreach (var assetRef in _assetCache.Values)
-            {
-                Addressables.Release(assetRef.Object);
-            }
-            _assetCache.Clear();
-            Debug.Log("Asset cache cleared.");
-        }
-       
-        private class AssetRef
-        {
-            public AsyncOperationHandle Object;
-            public int RefCount;
         }
     }
 }

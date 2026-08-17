@@ -7,12 +7,12 @@ namespace Game.Common.Input
     public sealed class InputController : ITickable
     {
         private readonly List<IInputSource> _sources;
-        private readonly InputEventsBus     _eventBus;
+        private readonly IInputEventsBus _eventBus;
 
         private bool _wasMoveActive;
         private bool _wasLookActive;
 
-        public InputController(IEnumerable<IInputSource> sources, InputEventsBus eventBus)
+        public InputController(IEnumerable<IInputSource> sources, IInputEventsBus eventBus)
         {
             _sources = sources
                 .OrderByDescending(s => s.Priority)
@@ -77,19 +77,13 @@ namespace Game.Common.Input
  
         private void PublishActions()
         {
-            foreach (var source in _sources)
+            for (int i = 0; i < _sources.Count; i++)
             {
+                IInputSource source = _sources[i];
                 if (!source.IsActive)
                     continue;
-                
-                var actions = source.GetActionInputs();
-                if (actions == null || actions.Count == 0)
-                    continue;
-                
-                foreach (var action in actions)
-                {
-                    action.Publish(_eventBus);
-                }
+
+                source.PublishActions(_eventBus);
             }
         }
 
