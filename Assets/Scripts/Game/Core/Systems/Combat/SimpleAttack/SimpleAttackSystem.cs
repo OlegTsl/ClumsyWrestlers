@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Game.Core.Character;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -45,8 +45,7 @@ namespace Game.Core.Systems
                     continue;
                 }
 
-                ICharacterCombatRuntimeState combat =
-                    model.GetState<ICharacterCombatRuntimeState>();
+                ICharacterCombatRuntimeState combat = model.GetState<ICharacterCombatRuntimeState>();
                 if (!combat.Enabled)
                 {
                     InterruptAttack(model, state);

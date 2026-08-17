@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Game.Core.Character;
-using Game.Core.Entities;
 using UnityEngine;
 using EntityId = Game.Core.Entities.EntityId;
 

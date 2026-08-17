@@ -6,10 +6,10 @@ namespace Game.Core.Character
 {
     public interface ICharacterView : IView
     {
-        CharacterData Data { get; }
-        Collider Hitbox { get; }
-        Rigidbody Rigidbody { get; }
-        Transform Transform { get; }
+        CharacterData       Data               { get; }
+        Collider            Hitbox             { get; }
+        Rigidbody           Rigidbody          { get; }
+        Transform           Transform          { get; }
         IBotNavigationAgent BotNavigationAgent { get; }
 
         CharacterPhysicsSnapshot CapturePhysicsSnapshot();
@@ -23,7 +23,5 @@ namespace Game.Core.Character
         void SetAnimatorTrigger(int id);
         void SetAttackHandIk(AttackHand hand, Vector3 position, float weight);
         void ClearAttackHandIk();
-        void SetAimEnabled(bool enabled);
-        void SetAimPositions(Vector3[] positions, int count);
     }
 }

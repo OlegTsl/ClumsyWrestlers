@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Game.Common.AssetsManager;
 using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.Teams;
 
 namespace Game.Core.Character
@@ -71,8 +72,7 @@ namespace Game.Core.Character
                 view.Hide();
 
                 CharacterModel model = new(characterId, view.Data, teamId);
-                model.GetState<ICharacterPhysicsState>()
-                    .SynchronizePhysics(view.CapturePhysicsSnapshot());
+                model.GetState<ICharacterPhysicsState>().SynchronizePhysics(view.CapturePhysicsSnapshot());
 
                 CharacterRuntime runtime = new(
                     model,

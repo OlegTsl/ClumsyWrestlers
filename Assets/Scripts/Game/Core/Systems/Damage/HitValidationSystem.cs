@@ -1,4 +1,5 @@
 using Game.Core.Character;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using Game.Core.Level;
 using Game.Core.Level.Entities;
@@ -44,23 +45,16 @@ namespace Game.Core.Systems
             {
                 sourceCharacter = _characters.GetModel(hit.SourceID);
                 if (!IsActive(sourceCharacter))
-                {
                     return false;
-                }
             }
             else if (!_impactSettings.TryGetImpactSettings(hit.SourceID, out _))
-            {
                 return false;
-            }
 
             if (hit.TargetType == HitObjectType.Character)
             {
-                ICharacterModel targetCharacter =
-                    _characters.GetModel(hit.TargetID);
+                ICharacterModel targetCharacter = _characters.GetModel(hit.TargetID);
                 if (!IsActive(targetCharacter))
-                {
                     return false;
-                }
 
                 return sourceCharacter == null ||
                        _teamRelations.AreEnemies(
@@ -69,9 +63,7 @@ namespace Game.Core.Systems
             }
 
             return _impactSettings.TryGetImpactSettings(hit.TargetID, out _) &&
-                   _levelEntities.TryGetCapability(
-                       hit.TargetID,
-                       out IImpulseReceiverView _);
+                   _levelEntities.TryGetCapability(hit.TargetID, out IImpulseReceiverView _);
         }
 
         private static bool IsActive(ICharacterModel character)

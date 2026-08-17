@@ -7,13 +7,11 @@ namespace Game.Core.Level
 {
     public interface ILevelController : IDisposable
     {
-        ILevelModel Level { get; }
+        ILevelModel Level  { get; }
         bool IsLevelLoaded { get; }
-        UniTask LoadLevelAsync(string address, CancellationToken cancellationToken);
+        
         void UnloadLevel();
-        void SpawnCharacter(
-            ICharacterModel model,
-            bool isPlayerTeam,
-            int spawnIndex);
+        UniTask LoadLevelAsync(string address, CancellationToken cancellationToken);
+        void SpawnCharacter(ICharacterModel model, bool isPlayerTeam, int spawnIndex);
     }
 }

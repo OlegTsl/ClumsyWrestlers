@@ -1,6 +1,7 @@
 using Game.Common.Input;
 using Game.Core.Character;
 using Game.Core.Commands;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
@@ -24,16 +25,11 @@ namespace Game.Core.Systems
         public void Handle(in CharacterCommand command)
         {
             if (command.InputEventType != InputEventType.Pressed)
-            {
                 return;
-            }
 
             ICharacterModel model = _characters.GetModel(command.CharacterId);
-            if (model != null &&
-                model.GetState<ICharacterActivityState>().Enabled)
-            {
+            if (model != null && model.GetState<ICharacterActivityState>().Enabled)
                 _events.Publish(new OnJumpEvent(model.CharacterID));
-            }
         }
     }
 }

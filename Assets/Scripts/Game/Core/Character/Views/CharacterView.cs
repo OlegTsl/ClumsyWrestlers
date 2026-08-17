@@ -7,35 +7,34 @@ namespace Game.Core.Character
 {
     public sealed class CharacterView : MonoBehaviour, ICharacterView
     {
-        private const int UpperBodyAttackLayerIndex = 1;
+        private const int CUpperBodyAttackLayerIndex = 1;
 
-        [SerializeField] private CharacterData _data;
-        [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private Animator _animator;
-        [SerializeField] private Collider _hitbox;
-        [SerializeField] private Transform _attackOrigin;
-        [SerializeField] private Transform _visualRoot;
-        [SerializeField] private LineRenderer _aim;
+        [SerializeField] private CharacterData     _data;
+        [SerializeField] private Rigidbody         _rigidbody;
+        [SerializeField] private Animator          _animator;
+        [SerializeField] private Collider          _hitbox;
+        [SerializeField] private Transform         _attackOrigin;
+        [SerializeField] private Transform         _visualRoot;
         [SerializeField] private BotNavigationView _botNavigation;
 
         private readonly HashSet<Collider> _groundColliders = new(4);
 
-        private float _attackHandIkWeight;
-        private Vector3 _attackHandIkPosition;
-        private Transform _leftHand;
-        private Transform _rightHand;
+        private float      _attackHandIkWeight;
+        private Vector3    _attackHandIkPosition;
+        private Transform  _leftHand;
+        private Transform  _rightHand;
         private AttackHand _attackHand;
         private Quaternion _visualRootBaseRotation;
 
-        public CharacterData Data => _data;
-        public Collider Hitbox => _hitbox;
-        public Rigidbody Rigidbody => _rigidbody;
-        public Transform Transform => transform;
+        public CharacterData       Data               => _data;
+        public Collider            Hitbox             => _hitbox;
+        public Rigidbody           Rigidbody          => _rigidbody;
+        public Transform           Transform          => transform;
         public IBotNavigationAgent BotNavigationAgent => _botNavigation;
 
         private void Awake()
         {
-            _leftHand = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
+            _leftHand  = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
             _rightHand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
             _visualRootBaseRotation = _visualRoot.localRotation;
         }
@@ -43,6 +42,7 @@ namespace Game.Core.Character
         private void OnDisable()
         {
             _groundColliders.Clear();
+
             ClearAttackHandIk();
             SetVisualLean(Quaternion.identity);
         }
@@ -54,12 +54,7 @@ namespace Game.Core.Character
             => gameObject.SetActive(true);
 
         public CharacterPhysicsSnapshot CapturePhysicsSnapshot()
-            => new(
-                _rigidbody.position,
-                _rigidbody.rotation,
-                _rigidbody.linearVelocity,
-                _attackOrigin.position,
-                _groundColliders.Count > 0);
+            => new(_rigidbody.position, _rigidbody.rotation, _rigidbody.linearVelocity, _attackOrigin.position, _groundColliders.Count > 0);
 
         public void SetPosition(Vector3 position)
             => _rigidbody.position = position;
@@ -95,46 +90,27 @@ namespace Game.Core.Character
         public void ClearAttackHandIk()
             => _attackHandIkWeight = 0f;
 
-        public void SetAimEnabled(bool enabled)
-            => _aim.gameObject.SetActive(enabled);
-
-        public void SetAimPositions(Vector3[] positions, int count)
-        {
-            _aim.positionCount = count;
-            for (int i = 0; i < count; i++)
-            {
-                _aim.SetPosition(i, positions[i]);
-            }
-        }
-
         private void OnAnimatorIK(int layerIndex)
         {
-            if (layerIndex != UpperBodyAttackLayerIndex)
-            {
+            if (layerIndex != CUpperBodyAttackLayerIndex)
                 return;
-            }
 
             AvatarIKGoal activeGoal = _attackHand == AttackHand.Left
-                ? AvatarIKGoal.LeftHand
-                : AvatarIKGoal.RightHand;
+                ? AvatarIKGoal.LeftHand : AvatarIKGoal.RightHand;
             AvatarIKGoal inactiveGoal = _attackHand == AttackHand.Left
-                ? AvatarIKGoal.RightHand
-                : AvatarIKGoal.LeftHand;
+                ? AvatarIKGoal.RightHand : AvatarIKGoal.LeftHand;
 
             _animator.SetIKPositionWeight(inactiveGoal, 0f);
             _animator.SetIKPositionWeight(activeGoal, _attackHandIkWeight);
 
             if (_attackHandIkWeight <= 0f)
-            {
                 return;
-            }
 
-            Transform activeHand = _attackHand == AttackHand.Left ? _leftHand : _rightHand;
-            Vector3 targetPosition = _attackHandIkPosition;
+            Transform activeHand     = _attackHand == AttackHand.Left ? _leftHand : _rightHand;
+            Vector3   targetPosition = _attackHandIkPosition;
+            
             if (activeHand != null)
-            {
                 targetPosition.y = activeHand.position.y;
-            }
 
             _animator.SetIKPosition(activeGoal, targetPosition);
         }
@@ -142,17 +118,13 @@ namespace Game.Core.Character
         private void OnCollisionEnter(Collision collision)
         {
             if (collision.gameObject.layer == LayerData.Ground)
-            {
                 _groundColliders.Add(collision.collider);
-            }
         }
 
         private void OnCollisionExit(Collision collision)
         {
             if (collision.gameObject.layer == LayerData.Ground)
-            {
                 _groundColliders.Remove(collision.collider);
-            }
         }
     }
 }

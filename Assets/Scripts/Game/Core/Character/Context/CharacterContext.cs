@@ -24,12 +24,11 @@ namespace Game.Core.Character
         public void RemoveCharacter(EntityId characterId)
         {
             if (!_characters.TryGetValue(characterId, out ICharacterModel character))
-            {
                 return;
-            }
 
             _characters.Remove(characterId);
             _charactersList.Remove(character);
+            
             OnCharacterRemoved?.Invoke(characterId);
         }
 

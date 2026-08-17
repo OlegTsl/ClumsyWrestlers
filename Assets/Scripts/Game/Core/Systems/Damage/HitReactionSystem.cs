@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Game.Core.Character;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -46,18 +46,12 @@ namespace Game.Core.Systems
             }
 
             ICharacterModel target = _models.GetModel(evt.Hit.TargetID);
-            if (target == null ||
-                !_states.TryGetValue(evt.Hit.TargetID, out HitReactionState state))
-            {
+            if (target == null || !_states.TryGetValue(evt.Hit.TargetID, out HitReactionState state))
                 return;
-            }
 
-            ICharacterCombatRuntimeState combat =
-                target.GetState<ICharacterCombatRuntimeState>();
+            ICharacterCombatRuntimeState combat = target.GetState<ICharacterCombatRuntimeState>();
             if (!combat.Enabled)
-            {
                 return;
-            }
 
             HitReactionSettings settings = target.Data.Combat.HitReaction;
             if (settings.LeanAngle <= 0f)
@@ -68,18 +62,19 @@ namespace Game.Core.Systems
 
             Vector3 direction = evt.Hit.Force;
             direction.y = 0f;
+            
             if (direction.sqrMagnitude <= MinimumDirectionSqrMagnitude)
-            {
                 return;
-            }
 
             direction.Normalize();
+            
             Vector3 worldAxis = Vector3.Cross(Vector3.up, direction);
             Vector3 localAxis = combat.InverseTransformDirection(worldAxis);
-            state.Active = true;
-            state.Elapsed = 0f;
-            state.Duration = settings.LeanDuration;
-            state.StartRotation = state.CurrentRotation;
+            
+            state.Active         = true;
+            state.Elapsed        = 0f;
+            state.Duration       = settings.LeanDuration;
+            state.StartRotation  = state.CurrentRotation;
             state.TargetRotation = Quaternion.AngleAxis(settings.LeanAngle, localAxis);
         }
 
@@ -89,13 +84,10 @@ namespace Game.Core.Systems
             {
                 HitReactionState state = pair.Value;
                 if (!state.Active)
-                {
                     continue;
-                }
 
                 ICharacterModel target = _models.GetModel(pair.Key);
-                if (target == null ||
-                    !target.GetState<ICharacterActivityState>().Enabled)
+                if (target == null || !target.GetState<ICharacterActivityState>().Enabled)
                 {
                     Reset(pair.Key, state);
                     continue;
@@ -106,32 +98,22 @@ namespace Game.Core.Systems
                 if (normalizedTime < PeakTimeNormalized)
                 {
                     float progress = Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        normalizedTime / PeakTimeNormalized);
+                        0f, 1f, normalizedTime / PeakTimeNormalized);
                     state.CurrentRotation = Quaternion.SlerpUnclamped(
-                        state.StartRotation,
-                        state.TargetRotation,
-                        progress);
+                        state.StartRotation, state.TargetRotation, progress);
                 }
                 else
                 {
                     float progress = Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        (normalizedTime - PeakTimeNormalized) /
-                        (1f - PeakTimeNormalized));
+                        0f, 1f, (normalizedTime - PeakTimeNormalized) / (1f - PeakTimeNormalized));
                     state.CurrentRotation = Quaternion.SlerpUnclamped(
-                        state.TargetRotation,
-                        Quaternion.identity,
-                        progress);
+                        state.TargetRotation, Quaternion.identity, progress);
                 }
 
                 _views.GetView(pair.Key)?.SetVisualLean(state.CurrentRotation);
+                
                 if (normalizedTime >= 1f)
-                {
                     Reset(pair.Key, state);
-                }
             }
         }
 

@@ -5,6 +5,7 @@ using Game.Common.Input;
 using Game.Core.Bots;
 using Game.Core.Character;
 using Game.Core.Commands;
+using Game.Core.Extension;
 using Game.Core.Level;
 using Game.Core.Teams;
 using UnityEngine;
@@ -14,59 +15,59 @@ namespace Game.Core.Round
 {
     public sealed class RoundController : IRoundController, ILateTickable
     {
-        private readonly ILevelController _levelController;
-        private readonly ICharacterBuilder _characterBuilder;
-        private readonly IInputEventsBus _inputEvents;
-        private readonly ICharacterCommandSink _commandSink;
-        private readonly ICharacterCommandBuffer _commandBuffer;
-        private readonly ISimulationClock _clock;
-        private readonly IRoundSystemsScope _systemsScope;
-        private readonly IBotDecisionScheduler _botScheduler;
+        private readonly ILevelController         _levelController;
+        private readonly ICharacterBuilder        _characterBuilder;
+        private readonly IInputEventsBus          _inputEvents;
+        private readonly ICharacterCommandSink    _commandSink;
+        private readonly ICharacterCommandBuffer  _commandBuffer;
+        private readonly ISimulationClock         _clock;
+        private readonly IRoundSystemsScope       _systemsScope;
+        private readonly IBotDecisionScheduler    _botScheduler;
         private readonly IBotDecisionAgentFactory _botFactory;
-        private readonly IRoundConfiguration _configuration;
-        private readonly List<ICharacterRuntime> _characters = new(16);
-        private readonly List<ICharacterRuntime> _botCharacters = new(15);
-        private readonly List<IBotDecisionAgent> _botAgents = new(15);
+        private readonly IRoundConfiguration      _configuration;
+        private readonly List<ICharacterRuntime>  _characters    = new(16);
+        private readonly List<ICharacterRuntime>  _botCharacters = new(15);
+        private readonly List<IBotDecisionAgent>  _botAgents     = new(15);
 
         private CancellationTokenSource _roundCancellation;
-        private ICharacterController _playerController;
-        private ICharacterRuntime _player;
+        private ICharacterController    _playerController;
+        private ICharacterRuntime       _player;
         private uint _generation;
 
         public RoundController(
-            ILevelController levelController,
-            ICharacterBuilder characterBuilder,
-            IInputEventsBus inputEvents,
-            ICharacterCommandSink commandSink,
-            ICharacterCommandBuffer commandBuffer,
-            ISimulationClock clock,
-            IRoundSystemsScope systemsScope,
-            IBotDecisionScheduler botScheduler,
+            ILevelController         levelController,
+            ICharacterBuilder        characterBuilder,
+            IInputEventsBus          inputEvents,
+            ICharacterCommandSink    commandSink,
+            ICharacterCommandBuffer  commandBuffer,
+            ISimulationClock         clock,
+            IRoundSystemsScope       systemsScope,
+            IBotDecisionScheduler    botScheduler,
             IBotDecisionAgentFactory botFactory,
-            IRoundConfiguration configuration)
+            IRoundConfiguration      configuration
+        )
         {
-            _levelController = levelController;
+            _levelController  = levelController;
             _characterBuilder = characterBuilder;
-            _inputEvents = inputEvents;
-            _commandSink = commandSink;
-            _commandBuffer = commandBuffer;
-            _clock = clock;
-            _systemsScope = systemsScope;
-            _botScheduler = botScheduler;
-            _botFactory = botFactory;
-            _configuration = configuration;
+            _inputEvents      = inputEvents;
+            _commandSink      = commandSink;
+            _commandBuffer    = commandBuffer;
+            _clock            = clock;
+            _systemsScope     = systemsScope;
+            _botScheduler     = botScheduler;
+            _botFactory       = botFactory;
+            _configuration    = configuration;
         }
 
-        public async UniTask StartRoundAsync(
-            string levelAddress,
-            CancellationToken cancellationToken)
+        public async UniTask StartRoundAsync(string levelAddress, CancellationToken cancellationToken)
         {
             EndRound();
+
             uint generation = ++_generation;
-            _roundCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken);
+            _roundCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            
             CancellationTokenSource currentCancellation = _roundCancellation;
-            CancellationToken roundToken = currentCancellation.Token;
+            CancellationToken       roundToken          = currentCancellation.Token;
 
             try
             {

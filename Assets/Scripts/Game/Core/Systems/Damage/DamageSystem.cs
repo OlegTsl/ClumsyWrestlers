@@ -1,4 +1,5 @@
 using Game.Core.Character;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using Game.Core.Level;
 using Game.Core.Level.Entities;
@@ -48,28 +49,20 @@ namespace Game.Core.Systems
             if (hit.SourceType == HitObjectType.Character)
             {
                 ICharacterModel source = _characters.GetModel(hit.SourceID);
-                if (source == null ||
-                    !source.GetState<ICharacterActivityState>().Enabled)
-                {
+                if (source == null || !source.GetState<ICharacterActivityState>().Enabled)
                     return false;
-                }
             }
             else if (!_impactSettings.TryGetImpactSettings(hit.SourceID, out _))
-            {
                 return false;
-            }
 
             if (hit.TargetType == HitObjectType.Character)
             {
                 ICharacterModel target = _characters.GetModel(hit.TargetID);
-                return target != null &&
-                       target.GetState<ICharacterActivityState>().Enabled;
+                return target != null && target.GetState<ICharacterActivityState>().Enabled;
             }
 
             return _impactSettings.TryGetImpactSettings(hit.TargetID, out _) &&
-                   _levelEntities.TryGetCapability(
-                       hit.TargetID,
-                       out IImpulseReceiverView _);
+                   _levelEntities.TryGetCapability(hit.TargetID, out IImpulseReceiverView _);
         }
 
         private Vector3 CalculateForce(in HitData hit)

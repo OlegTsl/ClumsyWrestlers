@@ -1,5 +1,6 @@
 using Game.Core.Character;
 using Game.Core.Commands;
+using Game.Core.Extension;
 
 namespace Game.Core.Systems
 {
@@ -25,8 +26,7 @@ namespace Game.Core.Systems
         public void Handle(in CharacterCommand command)
         {
             ICharacterModel model = _characters.GetModel(command.CharacterId);
-            if (model == null ||
-                !model.GetState<ICharacterActivityState>().Enabled ||
+            if (model == null || !model.GetState<ICharacterActivityState>().Enabled ||
                 !_states.TryGet(command.CharacterId, out CharacterControlState state))
             {
                 return;

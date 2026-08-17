@@ -19,9 +19,6 @@ namespace Game.Core.Systems
                 .To<MoveCharacterCommandHandler>()
                 .AsSingle();
             Container.Bind<ICharacterCommandHandler>()
-                .To<LookCharacterCommandHandler>()
-                .AsSingle();
-            Container.Bind<ICharacterCommandHandler>()
                 .To<JumpCharacterCommandHandler>()
                 .AsSingle();
             Container.Bind<ICharacterCommandHandler>()

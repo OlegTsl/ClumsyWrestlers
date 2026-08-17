@@ -2,9 +2,7 @@ namespace Game.Core.Commands
 {
     public sealed class CharacterCommandBuffer : ICharacterCommandBuffer
     {
-        private const int Capacity = 512;
-
-        private readonly CommandNode[] _heap = new CommandNode[Capacity];
+        private readonly CommandNode[] _heap = new CommandNode[512];
         private ulong _nextSequence;
 
         public int Count { get; private set; }
@@ -12,52 +10,33 @@ namespace Game.Core.Commands
         public bool TryEnqueue(in CharacterCommand command)
         {
             if (!command.CharacterId.IsValid)
-            {
                 return false;
-            }
 
             if (TryCoalesce(command))
-            {
                 return true;
-            }
 
             if (Count >= _heap.Length)
-            {
                 return false;
-            }
 
             int index = Count++;
             _heap[index] = new CommandNode(command, _nextSequence++);
+            
             SiftUp(index);
             return true;
         }
 
         private bool TryCoalesce(in CharacterCommand command)
         {
-            if (command.Type != CharacterCommandType.Move &&
-                command.Type != CharacterCommandType.Look)
-            {
+            if (command.Type != CharacterCommandType.Move)
                 return false;
-            }
 
             for (int i = 0; i < Count; i++)
             {
                 CharacterCommand queued = _heap[i].Command;
-                if (queued.Tick != command.Tick ||
-                    queued.CharacterId != command.CharacterId ||
-                    queued.Type != command.Type)
-                {
+                if (queued.Tick != command.Tick || queued.CharacterId != command.CharacterId || queued.Type != command.Type)
                     continue;
-                }
 
-                CharacterCommand merged = command.Type == CharacterCommandType.Look
-                    ? new CharacterCommand(
-                        command.CharacterId,
-                        command.Tick,
-                        command.Type,
-                        lookDelta: queued.LookDelta + command.LookDelta)
-                    : command;
-                _heap[i] = new CommandNode(merged, _heap[i].Sequence);
+                _heap[i] = new CommandNode(command, _heap[i].Sequence);
                 return true;
             }
 
@@ -74,6 +53,7 @@ namespace Game.Core.Commands
 
             command = _heap[0].Command;
             Count--;
+
             if (Count > 0)
             {
                 _heap[0] = _heap[Count];
@@ -91,7 +71,7 @@ namespace Game.Core.Commands
                 _heap[i] = default;
             }
 
-            Count = 0;
+            Count         = 0;
             _nextSequence = 0u;
         }
 
@@ -100,10 +80,9 @@ namespace Game.Core.Commands
             while (index > 0)
             {
                 int parent = (index - 1) / 2;
+                
                 if (!ComesBefore(_heap[index], _heap[parent]))
-                {
                     return;
-                }
 
                 Swap(index, parent);
                 index = parent;
@@ -116,18 +95,14 @@ namespace Game.Core.Commands
             {
                 int left = index * 2 + 1;
                 if (left >= Count)
-                {
                     return;
-                }
 
                 int right = left + 1;
-                int next = right < Count && ComesBefore(_heap[right], _heap[left])
-                    ? right
-                    : left;
+                int next  = right < Count && ComesBefore(_heap[right], _heap[left])
+                    ? right : left;
+
                 if (!ComesBefore(_heap[next], _heap[index]))
-                {
                     return;
-                }
 
                 Swap(index, next);
                 index = next;
@@ -135,24 +110,23 @@ namespace Game.Core.Commands
         }
 
         private static bool ComesBefore(in CommandNode left, in CommandNode right)
-            => left.Command.Tick < right.Command.Tick ||
-               left.Command.Tick == right.Command.Tick && left.Sequence < right.Sequence;
+            => left.Command.Tick < right.Command.Tick || left.Command.Tick == right.Command.Tick && left.Sequence < right.Sequence;
 
         private void Swap(int left, int right)
         {
             CommandNode temporary = _heap[left];
-            _heap[left] = _heap[right];
+            _heap[left]  = _heap[right];
             _heap[right] = temporary;
         }
 
         private readonly struct CommandNode
         {
-            public CharacterCommand Command { get; }
-            public ulong Sequence { get; }
+            public CharacterCommand Command  { get; }
+            public ulong            Sequence { get; }
 
             public CommandNode(CharacterCommand command, ulong sequence)
             {
-                Command = command;
+                Command  = command;
                 Sequence = sequence;
             }
         }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Game.Core.Character;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -288,22 +288,16 @@ namespace Game.Core.Systems
         private void OnForce(OnForceEvent evt)
         {
             ICharacterModel model = _context.GetModel(evt.CharacterID);
-            if (model == null ||
-                !_states.TryGetValue(evt.CharacterID, out var state))
-            {
+            if (model == null || !_states.TryGetValue(evt.CharacterID, out var state))
                 return;
-            }
 
-            ICharacterMovementRuntimeState movement =
-                model.GetState<ICharacterMovementRuntimeState>();
+            ICharacterMovementRuntimeState movement = model.GetState<ICharacterMovementRuntimeState>();
             if (!movement.Enabled)
-            {
                 return;
-            }
 
             state.HorizontalVelocity = new Vector3(evt.Force.x, 0f, evt.Force.z);
-            state.VerticalVelocity = evt.Force.y;
-            state.AirVelocity = state.HorizontalVelocity;
+            state.VerticalVelocity   = evt.Force.y;
+            state.AirVelocity        = state.HorizontalVelocity;
 
             movement.SetVelocity(evt.Force);
         }

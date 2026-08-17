@@ -12,7 +12,7 @@ namespace Game.Core.Systems
         public LookSystem(Transform character, Transform camera)
         {
             _character = character;
-            _camera = camera;
+            _camera    = camera;
         }
 
         public void LateTick()

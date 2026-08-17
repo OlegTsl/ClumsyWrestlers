@@ -1,4 +1,5 @@
 using Game.Core.Character;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using UnityEngine;
 
@@ -26,16 +27,11 @@ namespace Game.Core.Systems
         {
             ICharacterModel attacker = _context.GetModel(evt.CharacterID);
             if (attacker == null)
-            {
                 return;
-            }
 
-            ICharacterCombatRuntimeState combat =
-                attacker.GetState<ICharacterCombatRuntimeState>();
+            ICharacterCombatRuntimeState combat = attacker.GetState<ICharacterCombatRuntimeState>();
             if (!combat.Enabled)
-            {
                 return;
-            }
 
             _events.Publish(new OnForceEvent(
                 attacker.CharacterID, CalculateLaunchVelocity(combat)));

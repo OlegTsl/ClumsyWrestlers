@@ -1,6 +1,6 @@
 using Game.Core.Character;
 using Game.Core.Data;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using UnityEngine;
 using Zenject;
@@ -10,19 +10,19 @@ namespace Game.Core.Systems
 {
     public sealed class AnimationSystem : IAnimationSystem, ITickable
     {
-        private readonly IGameEventsBus _events;
-        private readonly ICharacterContext _models;
+        private readonly IGameEventsBus        _events;
+        private readonly ICharacterContext     _models;
         private readonly ICharacterViewContext _views;
 
         public AnimationSystem(
-            IGameEventsBus events,
-            ICharacterContext models,
+            IGameEventsBus        events,
+            ICharacterContext     models,
             ICharacterViewContext views
         )
         {
             _events = events;
             _models = models;
-            _views = views;
+            _views  = views;
 
             _events.Subscribe<OnJumpEvent>(OnJump);
             _events.Subscribe<OnFallEvent>(OnFall);
@@ -32,7 +32,6 @@ namespace Game.Core.Systems
             _events.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
             _events.Subscribe<OnAttackHandIkEvent>(OnAttackHandIk);
             _events.Subscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);
-            _events.Subscribe<OnAimStateChangedEvent>(OnAimStateChanged);
         }
 
         private void OnJump(OnJumpEvent evt)
@@ -53,36 +52,28 @@ namespace Game.Core.Systems
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
             ICharacterModel model = _models.GetModel(evt.CharacterID);
-            ICharacterView view = GetEnabledView(evt.CharacterID);
+            ICharacterView view   = GetEnabledView(evt.CharacterID);
+            
             if (model == null || view == null)
-            {
                 return;
-            }
 
             PowerAttackSettings settings = model.Data.Combat.PowerAttack;
-            view.SetAnimatorFloat(
-                AnimationData.PowerAttackSpeed,
-                settings.AnimationSpeed,
-                0f,
-                Time.deltaTime);
+            view.SetAnimatorFloat(AnimationData.PowerAttackSpeed,
+                settings.AnimationSpeed, 0f, Time.deltaTime);
             view.SetAnimatorTrigger(AnimationData.PowerAttackTrigger);
         }
 
         private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
         {
             ICharacterModel model = _models.GetModel(evt.CharacterID);
-            ICharacterView view = GetEnabledView(evt.CharacterID);
+            ICharacterView view   = GetEnabledView(evt.CharacterID);
+            
             if (model == null || view == null)
-            {
                 return;
-            }
 
             SimpleAttackSettings settings = model.Data.Combat.SimpleAttack;
-            view.SetAnimatorFloat(
-                AnimationData.SimpleAttackSpeed,
-                settings.AnimationSpeed,
-                0f,
-                Time.deltaTime);
+            view.SetAnimatorFloat(AnimationData.SimpleAttackSpeed,
+                settings.AnimationSpeed, 0f, Time.deltaTime);
             view.SetAnimatorBool(AnimationData.MirrorPunch, evt.IsMirrored);
             view.SetAnimatorTrigger(AnimationData.PunchTrigger);
         }
@@ -96,37 +87,28 @@ namespace Game.Core.Systems
         private void OnAttackHandIkCleared(OnAttackHandIkClearedEvent evt)
             => _views.GetView(evt.CharacterID)?.ClearAttackHandIk();
 
-        private void OnAimStateChanged(OnAimStateChangedEvent evt)
-            => _views.GetView(evt.CharacterID)?.SetAimEnabled(evt.IsAiming);
-
         public void Tick()
         {
             var characters = _models.AllCharacters;
             for (int i = 0; i < characters.Count; i++)
             {
                 ICharacterModel model = characters[i];
-                ICharacterPresentationState presentation =
-                    model.GetState<ICharacterPresentationState>();
+                ICharacterPresentationState presentation = model.GetState<ICharacterPresentationState>();
+                
                 if (!presentation.Enabled)
-                {
                     continue;
-                }
 
                 ICharacterView view = _views.GetView(model.CharacterID);
                 if (view == null)
-                {
                     continue;
-                }
 
                 Vector3 horizontalVelocity = presentation.Velocity;
                 horizontalVelocity.y = 0f;
                 float speed = horizontalVelocity.sqrMagnitude < 0.01f
-                    ? 0f
-                    : horizontalVelocity.magnitude;
+                    ? 0f : horizontalVelocity.magnitude;
+                
                 view.SetAnimatorFloat(AnimationData.Speed, speed, 0.05f, Time.deltaTime);
-                view.SetAnimatorBool(
-                    AnimationData.Grounded,
-                    presentation.IsGrounded);
+                view.SetAnimatorBool(AnimationData.Grounded, presentation.IsGrounded);
             }
         }
 
@@ -139,10 +121,8 @@ namespace Game.Core.Systems
         private ICharacterView GetEnabledView(EntityId characterId)
         {
             ICharacterModel model = _models.GetModel(characterId);
-            return model != null &&
-                   model.GetState<ICharacterActivityState>().Enabled
-                ? _views.GetView(characterId)
-                : null;
+            return model != null && model.GetState<ICharacterActivityState>().Enabled
+                ? _views.GetView(characterId) : null;
         }
 
         public void Dispose()
@@ -155,7 +135,6 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
             _events.Unsubscribe<OnAttackHandIkEvent>(OnAttackHandIk);
             _events.Unsubscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);
-            _events.Unsubscribe<OnAimStateChangedEvent>(OnAimStateChanged);
         }
     }
 }

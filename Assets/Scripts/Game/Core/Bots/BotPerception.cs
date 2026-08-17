@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Game.Core.Character;
 using Game.Core.Data;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.Level;
 using Game.Core.Level.Entities;
 using Game.Core.Teams;

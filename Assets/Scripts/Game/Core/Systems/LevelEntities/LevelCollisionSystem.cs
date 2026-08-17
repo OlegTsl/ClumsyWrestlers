@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Game.Core.Character;
-using Game.Core.Entities;
+using Game.Core.Extension;
 using Game.Core.GameEvents;
 using Game.Core.Level;
 using Game.Core.Level.Entities;
@@ -13,27 +13,27 @@ namespace Game.Core.Systems
 {
     public sealed class LevelCollisionSystem : IDisposable, IFixedTickable
     {
-        private const float MinimumImpactSpeed = 0.3f;
+        private const float CMinimumImpactSpeed = 0.3f;
 
-        private readonly IGameEventsBus _events;
+        private readonly IGameEventsBus        _events;
         private readonly ILevelCollisionBuffer _collisions;
-        private readonly ILevelEntityRegistry _levelEntities;
-        private readonly ICharacterContext _characters;
+        private readonly ILevelEntityRegistry  _levelEntities;
+        private readonly ICharacterContext     _characters;
         private readonly ICharacterViewContext _characterViews;
         private readonly HashSet<CollisionPair> _processedCollisions = new(32);
 
         public LevelCollisionSystem(
-            IGameEventsBus events,
+            IGameEventsBus        events,
             ILevelCollisionBuffer collisions,
-            ILevelEntityRegistry levelEntities,
-            ICharacterContext characters,
+            ILevelEntityRegistry  levelEntities,
+            ICharacterContext     characters,
             ICharacterViewContext characterViews
         )
         {
-            _events = events;
-            _collisions = collisions;
-            _levelEntities = levelEntities;
-            _characters = characters;
+            _events         = events;
+            _collisions     = collisions;
+            _levelEntities  = levelEntities;
+            _characters     = characters;
             _characterViews = characterViews;
         }
 
@@ -48,42 +48,29 @@ namespace Game.Core.Systems
 
         private void PublishCharacterHit(in LevelCollisionEvent collision)
         {
-            if (collision.ImpactSpeed < MinimumImpactSpeed ||
-                !_characterViews.TryGetCharacterId(
-                    collision.OtherCollider,
-                    out EntityId targetId))
+            if (collision.ImpactSpeed < CMinimumImpactSpeed ||
+                !_characterViews.TryGetCharacterId(collision.OtherCollider, out EntityId targetId))
             {
                 return;
             }
 
             ICharacterModel target = _characters.GetModel(targetId);
             if (target == null ||
-                !_processedCollisions.Add(new CollisionPair(
-                    collision.SourceId,
-                    targetId)) ||
-                !_levelEntities.TryGetEntity(
-                    collision.SourceId,
-                    out ILevelEntityView source))
+                !_processedCollisions.Add(new CollisionPair(collision.SourceId, targetId)) ||
+                !_levelEntities.TryGetEntity(collision.SourceId, out ILevelEntityView source))
             {
                 return;
             }
 
-            ICharacterCombatRuntimeState combat =
-                target.GetState<ICharacterCombatRuntimeState>();
+            ICharacterCombatRuntimeState combat = target.GetState<ICharacterCombatRuntimeState>();
             if (!combat.Enabled)
-            {
                 return;
-            }
 
             Vector3 direction = combat.Position - source.Position;
             _events.Publish(new OnHitDetectedEvent(new HitData(
-                HitObjectType.LevelEntity,
-                collision.SourceId,
-                HitObjectType.Character,
-                targetId,
-                AttackType.Simple,
-                direction,
-                collision.ImpactVelocity)));
+                HitObjectType.LevelEntity, collision.SourceId,
+                HitObjectType.Character, targetId,
+                AttackType.Simple, direction, collision.ImpactVelocity)));
         }
 
         public void Dispose()
@@ -110,8 +97,7 @@ namespace Game.Core.Systems
             {
                 unchecked
                 {
-                    return (_sourceId.GetHashCode() * 397) ^
-                           _targetId.GetHashCode();
+                    return (_sourceId.GetHashCode() * 397) ^ _targetId.GetHashCode();
                 }
             }
         }
