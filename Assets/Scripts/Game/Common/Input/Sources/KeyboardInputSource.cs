@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.Common.Input
@@ -7,7 +8,7 @@ namespace Game.Common.Input
         public int  Priority { get; }
         public bool IsActive { get; set; } = true;
 
-        private bool _wasSpacePressed;
+        private Dictionary<KeyCode, bool> _wasPressed = new();
 
         public KeyboardSource(int priority = 0)
             => Priority = priority;
@@ -32,12 +33,33 @@ namespace Game.Common.Input
 
         public void PublishActions(IInputEventsBus eventBus)
         {
-            bool spacePressed = UnityEngine.Input.GetKey(KeyCode.Space);
+            PublishJump(eventBus);
+            PublishBlock(eventBus);
+        }
 
-            if (spacePressed && !_wasSpacePressed)
+        private void PublishJump(IInputEventsBus eventBus)
+        {
+            bool pressed = UnityEngine.Input.GetKey(KeyCode.Space);
+            _wasPressed.TryGetValue(KeyCode.Space, out var wasPressed);
+
+            if (pressed && !wasPressed)
                 eventBus.Publish(new JumpAction(InputEventType.Pressed));
 
-            _wasSpacePressed = spacePressed;
+            _wasPressed[KeyCode.Space] = pressed;
+        }
+
+        private void PublishBlock(IInputEventsBus eventBus)
+        {
+            bool pressed = UnityEngine.Input.GetKey(KeyCode.Q);
+            _wasPressed.TryGetValue(KeyCode.Q, out var wasPressed);
+
+            if (pressed != wasPressed)
+            {
+                eventBus.Publish(new BlockAction(pressed ?
+                    InputEventType.Pressed : InputEventType.Released));
+
+                _wasPressed[KeyCode.Q] = pressed;
+            }
         }
     }
 }

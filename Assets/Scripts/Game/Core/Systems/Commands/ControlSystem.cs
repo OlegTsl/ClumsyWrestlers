@@ -5,25 +5,22 @@ using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
 {
-    public sealed class CharacterControlSystem : IDisposable
+    public sealed class ControlSystem : IDisposable
     {
         private readonly IGameEventsBus _events;
-        private readonly Dictionary<CharacterCommandType, ICharacterCommandHandler>
-            _handlers;
+        private readonly Dictionary<CharacterCommandType, ICommandHandler> _handlers;
 
-        public CharacterControlSystem(
-            IGameEventsBus events,
-            List<ICharacterCommandHandler> handlers
+        public ControlSystem(
+            IGameEventsBus        events,
+            List<ICommandHandler> handlers
         )
         {
-            _events = events;
-            _handlers = new Dictionary<
-                CharacterCommandType,
-                ICharacterCommandHandler>(handlers.Count);
+            _events   = events;
+            _handlers = new Dictionary<CharacterCommandType, ICommandHandler>(handlers.Count);
 
             for (int i = 0; i < handlers.Count; i++)
             {
-                ICharacterCommandHandler handler = handlers[i];
+                ICommandHandler handler = handlers[i];
                 if (!_handlers.TryAdd(handler.CommandType, handler))
                 {
                     throw new InvalidOperationException(
@@ -37,12 +34,8 @@ namespace Game.Core.Systems
         private void OnCommand(OnCharacterCommandEvent evt)
         {
             CharacterCommand command = evt.Command;
-            if (_handlers.TryGetValue(
-                    command.Type,
-                    out ICharacterCommandHandler handler))
-            {
+            if (_handlers.TryGetValue(command.Type, out ICommandHandler handler))
                 handler.Handle(command);
-            }
         }
 
         public void Dispose()

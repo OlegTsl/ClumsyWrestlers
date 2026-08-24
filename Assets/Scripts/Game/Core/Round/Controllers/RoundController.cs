@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Game.Common.AssetsManager;
 using Game.Common.Input;
 using Game.Core.Bots;
 using Game.Core.Character;
@@ -15,6 +16,8 @@ namespace Game.Core.Round
 {
     public sealed class RoundController : IRoundController, ILateTickable
     {
+        private const string CRoundConfigName = "RoundConfiguration";
+
         private readonly ILevelController         _levelController;
         private readonly ICharacterBuilder        _characterBuilder;
         private readonly IInputEventsBus          _inputEvents;
@@ -24,7 +27,7 @@ namespace Game.Core.Round
         private readonly IRoundSystemsScope       _systemsScope;
         private readonly IBotDecisionScheduler    _botScheduler;
         private readonly IBotDecisionAgentFactory _botFactory;
-        private readonly IRoundConfiguration      _configuration;
+        private readonly IAssetManager            _assetManager;
         private readonly List<ICharacterRuntime>  _characters    = new(16);
         private readonly List<ICharacterRuntime>  _botCharacters = new(15);
         private readonly List<IBotDecisionAgent>  _botAgents     = new(15);
@@ -32,7 +35,8 @@ namespace Game.Core.Round
         private CancellationTokenSource _roundCancellation;
         private ICharacterController    _playerController;
         private ICharacterRuntime       _player;
-        private uint _generation;
+        private IAssetLease<RoundData>  _configLease;
+        private uint                    _generation;
 
         public RoundController(
             ILevelController         levelController,
@@ -44,7 +48,7 @@ namespace Game.Core.Round
             IRoundSystemsScope       systemsScope,
             IBotDecisionScheduler    botScheduler,
             IBotDecisionAgentFactory botFactory,
-            IRoundConfiguration      configuration
+            IAssetManager            assetManager
         )
         {
             _levelController  = levelController;
@@ -56,14 +60,14 @@ namespace Game.Core.Round
             _systemsScope     = systemsScope;
             _botScheduler     = botScheduler;
             _botFactory       = botFactory;
-            _configuration    = configuration;
+            _assetManager     = assetManager;
         }
 
         public async UniTask StartRoundAsync(string levelAddress, CancellationToken cancellationToken)
         {
             EndRound();
 
-            uint generation = ++_generation;
+            uint generation    = ++_generation;
             _roundCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             
             CancellationTokenSource currentCancellation = _roundCancellation;
@@ -74,18 +78,11 @@ namespace Game.Core.Round
                 await _levelController.LoadLevelAsync(levelAddress, roundToken);
                 roundToken.ThrowIfCancellationRequested();
 
-                _player = await BuildCharacterAsync(
-                    _configuration.PlayerTeamId,
-                    false,
-                    roundToken);
-                await BuildBotsAsync(
-                    _configuration.AlliedBotCount,
-                    _configuration.PlayerTeamId,
-                    roundToken);
-                await BuildBotsAsync(
-                    _configuration.OpponentBotCount,
-                    _configuration.OpponentTeamId,
-                    roundToken);
+                _configLease = await _assetManager.LoadAssetAsync<RoundData>(CRoundConfigName, roundToken);
+                _player      = await BuildCharacterAsync(_configLease.Asset.PlayerTeamId, false, roundToken);
+                
+                await BuildBotsAsync(_configLease.Asset.AlliedBotCount,   _configLease.Asset.PlayerTeamId,   roundToken);
+                await BuildBotsAsync(_configLease.Asset.OpponentBotCount, _configLease.Asset.OpponentTeamId, roundToken);
                 roundToken.ThrowIfCancellationRequested();
 
                 SpawnCharacters();
@@ -93,47 +90,33 @@ namespace Game.Core.Round
                 CreateBotAgents();
 
                 Camera mainCamera = Camera.main;
-                _playerController = new Game.Core.Character.CharacterController(
-                    _player.Model,
-                    _player.View,
-                    _inputEvents,
-                    _commandSink,
-                    _clock,
-                    mainCamera.transform);
+                _playerController = new Character.CharacterController(
+                    _player.Model, _player.View, _inputEvents, _commandSink, _clock, mainCamera.transform);
             }
             catch
             {
-                if (_generation == generation &&
-                    ReferenceEquals(_roundCancellation, currentCancellation))
-                {
+                if (_generation == generation && ReferenceEquals(_roundCancellation, currentCancellation))
                     EndRound();
-                }
 
                 throw;
             }
         }
 
-        private async UniTask<ICharacterRuntime> BuildCharacterAsync(
-            TeamId teamId,
-            bool isBot,
-            CancellationToken cancellationToken)
+        private async UniTask<ICharacterRuntime> BuildCharacterAsync(TeamId teamId, bool isBot, CancellationToken cancellationToken)
         {
             ICharacterRuntime pendingCharacter = null;
             try
             {
                 pendingCharacter = await _characterBuilder.BuildCharacterAsync(
-                    _configuration.CharacterAddress,
-                    teamId,
-                    cancellationToken);
+                    _configLease.Asset.CharacterAddress, teamId, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 ICharacterRuntime character = pendingCharacter;
                 pendingCharacter = null;
                 _characters.Add(character);
+                
                 if (isBot)
-                {
                     _botCharacters.Add(character);
-                }
 
                 return character;
             }
@@ -161,33 +144,27 @@ namespace Game.Core.Round
             for (int i = 0; i < _characters.Count; i++)
             {
                 ICharacterRuntime character = _characters[i];
-                TeamId teamId =
-                    character.Model.GetState<ICharacterTeamState>().TeamId;
-                bool isPlayerTeam = teamId == _configuration.PlayerTeamId;
-                int spawnIndex = isPlayerTeam
-                    ? playerTeamSpawnIndex++
-                    : opponentTeamSpawnIndex++;
-                _levelController.SpawnCharacter(
-                    character.Model,
-                    isPlayerTeam,
-                    spawnIndex);
+                TeamId teamId = character.Model.GetState<ICharacterTeamState>().TeamId;
+                
+                bool isPlayerTeam = teamId == _configLease.Asset.PlayerTeamId;
+                int spawnIndex = isPlayerTeam ? playerTeamSpawnIndex++ : opponentTeamSpawnIndex++;
+                
+                _levelController.SpawnCharacter(character.Model, isPlayerTeam, spawnIndex);
             }
         }
 
         private void CreateBotAgents()
         {
-            ILevelEntityRegistry levelEntities =
-                (ILevelEntityRegistry)_levelController.Level;
+            ILevelEntityRegistry levelEntities = (ILevelEntityRegistry)_levelController.Level;
             ILevelArenaData arena = (ILevelArenaData)_levelController.Level;
+            
             for (int i = 0; i < _botCharacters.Count; i++)
             {
                 ICharacterRuntime character = _botCharacters[i];
                 IBotDecisionAgent agent = _botFactory.Create(
-                    character.Model,
-                    character.View.BotNavigationAgent,
-                    levelEntities,
-                    arena,
-                    _configuration.BotBehaviorSettings);
+                    character.Model, character.View.BotNavigationAgent,
+                    levelEntities, arena, _configLease.Asset.BotBehaviorSettings);
+                
                 _botAgents.Add(agent);
                 _botScheduler.Register(agent);
             }
@@ -199,6 +176,7 @@ namespace Game.Core.Round
 
             CancellationTokenSource cancellation = _roundCancellation;
             _roundCancellation = null;
+            
             cancellation?.Cancel();
             cancellation?.Dispose();
 
@@ -226,6 +204,9 @@ namespace Game.Core.Round
             _levelController.UnloadLevel();
             _commandBuffer.Clear();
             _clock.Reset();
+
+            _configLease?.Dispose();
+            _configLease = null;
         }
 
         public void LateTick()

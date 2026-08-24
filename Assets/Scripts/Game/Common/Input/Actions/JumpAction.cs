@@ -5,6 +5,5 @@ namespace Game.Common.Input
         public InputEventType EventType { get; }
         public JumpAction(InputEventType eventType)
             => EventType = eventType;
-        
     }
 }

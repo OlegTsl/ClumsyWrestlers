@@ -6,12 +6,12 @@ namespace Game.Core.Commands
 {
     public readonly struct CharacterCommand
     {
-        public EntityId CharacterId          { get; }
-        public uint Tick                     { get; }
-        public CharacterCommandType Type     { get; }
-        public Vector3 Direction             { get; }
-        public Vector2 LookDelta             { get; }
-        public InputEventType InputEventType { get; }
+        public EntityId             CharacterId    { get; }
+        public uint                 Tick           { get; }
+        public CharacterCommandType Type           { get; }
+        public Vector3              Direction      { get; }
+        public Vector2              LookDelta      { get; }
+        public InputEventType       InputEventType { get; }
 
         public CharacterCommand(
             EntityId             characterId,

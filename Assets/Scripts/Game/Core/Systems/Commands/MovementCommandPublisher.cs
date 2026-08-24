@@ -3,11 +3,11 @@ using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
 {
-    public sealed class CharacterMovementCommandPublisher
+    public sealed class MovementCommandPublisher
     {
         private readonly IGameEventsBus _events;
 
-        public CharacterMovementCommandPublisher(IGameEventsBus events)
+        public MovementCommandPublisher(IGameEventsBus events)
             => _events = events;
 
         public void Publish(ICharacterModel model, CharacterControlState state)

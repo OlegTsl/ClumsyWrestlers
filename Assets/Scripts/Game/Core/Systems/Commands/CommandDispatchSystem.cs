@@ -5,21 +5,21 @@ using Zenject;
 
 namespace Game.Core.Systems
 {
-    public sealed class CharacterCommandDispatchSystem : IDisposable, IFixedTickable
+    public sealed class CommandDispatchSystem : IDisposable, IFixedTickable
     {
         private readonly ICharacterCommandBuffer _commands;
-        private readonly ISimulationClock _clock;
-        private readonly IGameEventsBus _events;
+        private readonly ISimulationClock        _clock;
+        private readonly IGameEventsBus          _events;
 
-        public CharacterCommandDispatchSystem(
+        public CommandDispatchSystem(
             ICharacterCommandBuffer commands,
-            ISimulationClock clock,
-            IGameEventsBus events
+            ISimulationClock        clock,
+            IGameEventsBus          events
         )
         {
             _commands = commands;
-            _clock = clock;
-            _events = events;
+            _clock    = clock;
+            _events   = events;
         }
 
         public void FixedTick()

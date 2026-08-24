@@ -6,30 +6,34 @@ using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
 {
-    public sealed class JumpCharacterCommandHandler : ICharacterCommandHandler
+    public sealed class SimpleAttackCommandHandler : ICommandHandler
     {
         private readonly ICharacterContext _characters;
         private readonly IGameEventsBus _events;
 
-        public CharacterCommandType CommandType => CharacterCommandType.Jump;
+        public CharacterCommandType CommandType
+            => CharacterCommandType.SimpleAttack;
 
-        public JumpCharacterCommandHandler(
+        public SimpleAttackCommandHandler(
             ICharacterContext characters,
-            IGameEventsBus events
+            IGameEventsBus    events
         )
         {
             _characters = characters;
-            _events = events;
+            _events     = events;
         }
 
         public void Handle(in CharacterCommand command)
         {
-            if (command.InputEventType != InputEventType.Pressed)
+            if (command.InputEventType == InputEventType.Held)
                 return;
 
             ICharacterModel model = _characters.GetModel(command.CharacterId);
             if (model != null && model.GetState<ICharacterActivityState>().Enabled)
-                _events.Publish(new OnJumpEvent(model.CharacterID));
+            {
+                _events.Publish(new OnSimpleAttackInputEvent(
+                    model.CharacterID, command.InputEventType == InputEventType.Pressed));
+            }
         }
     }
 }

@@ -9,63 +9,46 @@ namespace Game.Core.Character
 {
     public sealed class CharacterBuilder : ICharacterBuilder
     {
-        private readonly IAssetManager _assetManager;
-        private readonly IEntityIdAllocator _entityIdAllocator;
-        private readonly ICharacterContext _characterContext;
+        private readonly IAssetManager         _assetManager;
+        private readonly IEntityIdAllocator    _entityIdAllocator;
+        private readonly ICharacterContext     _characterContext;
         private readonly ICharacterViewContext _viewContext;
 
         public CharacterBuilder(
-            IAssetManager assetManager,
-            IEntityIdAllocator entityIdAllocator,
-            ICharacterContext characterContext,
+            IAssetManager         assetManager,
+            IEntityIdAllocator    entityIdAllocator,
+            ICharacterContext     characterContext,
             ICharacterViewContext viewContext
         )
         {
-            _assetManager = assetManager;
+            _assetManager      = assetManager;
             _entityIdAllocator = entityIdAllocator;
-            _characterContext = characterContext;
-            _viewContext = viewContext;
+            _characterContext  = characterContext;
+            _viewContext       = viewContext;
         }
 
-        public UniTask<ICharacterRuntime> BuildCharacterAsync(
-            string address,
-            TeamId teamId,
-            CancellationToken cancellationToken
-        )
-            => BuildCharacterAsync(
-                address,
-                _entityIdAllocator.Allocate(),
-                teamId,
-                cancellationToken);
+        public UniTask<ICharacterRuntime> BuildCharacterAsync(string address, TeamId teamId, CancellationToken cancellationToken)
+            => BuildCharacterAsync(address, _entityIdAllocator.Allocate(), teamId, cancellationToken);
 
-        public async UniTask<ICharacterRuntime> BuildCharacterAsync(
-            string address,
-            EntityId characterId,
-            TeamId teamId,
-            CancellationToken cancellationToken
-        )
+        public async UniTask<ICharacterRuntime> BuildCharacterAsync(string address, EntityId characterId, TeamId teamId, CancellationToken cancellationToken)
         {
             if (!characterId.IsValid)
             {
                 throw new System.ArgumentException(
-                    "Character id must be valid.",
-                    nameof(characterId));
+                    "Character id must be valid.", nameof(characterId));
             }
 
             if (!teamId.IsValid)
             {
                 throw new System.ArgumentException(
-                    "Team id must be valid.",
-                    nameof(teamId));
+                    "Team id must be valid.", nameof(teamId));
             }
 
             IViewLease<CharacterView> viewLease = null;
             try
             {
                 viewLease = await _assetManager.InstantiateViewAsync<CharacterView>(
-                    address,
-                    null,
-                    cancellationToken);
+                    address, null, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 CharacterView view = viewLease.View;
@@ -75,10 +58,8 @@ namespace Game.Core.Character
                 model.GetState<ICharacterPhysicsState>().SynchronizePhysics(view.CapturePhysicsSnapshot());
 
                 CharacterRuntime runtime = new(
-                    model,
-                    viewLease,
-                    _characterContext,
-                    _viewContext);
+                    model, viewLease, _characterContext, _viewContext);
+                
                 viewLease = null;
                 return runtime;
             }

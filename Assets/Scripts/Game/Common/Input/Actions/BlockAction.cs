@@ -1,10 +1,9 @@
 namespace Game.Common.Input
 {
-    public readonly struct DashAction
+    public readonly struct BlockAction
     {
         public InputEventType EventType { get; }
-        public DashAction(InputEventType eventType)
+        public BlockAction(InputEventType eventType)
             => EventType = eventType;
-
     }
 }

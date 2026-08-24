@@ -4,6 +4,7 @@ namespace Game.Core.Commands
     {
         Move,
         Jump,
+        Block,
         SimpleAttack,
         PowerAttack
     }

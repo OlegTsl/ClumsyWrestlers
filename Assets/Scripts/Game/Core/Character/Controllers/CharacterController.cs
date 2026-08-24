@@ -29,6 +29,7 @@ namespace Game.Core.Character
 
             _inputEvents.Subscribe<MoveInput>(HandleMove);
             _inputEvents.Subscribe<JumpAction>(HandleJump);
+            _inputEvents.Subscribe<BlockAction>(HandleBlock);
             _inputEvents.Subscribe<SimpleAttackAction>(HandleSimpleAttack);
             _inputEvents.Subscribe<PowerAttackAction>(HandlePowerAttack);
 
@@ -44,6 +45,9 @@ namespace Game.Core.Character
             if (action.EventType == InputEventType.Pressed)
                 EnqueueAction(CharacterCommandType.Jump, action.EventType);
         }
+
+        private void HandleBlock(BlockAction action)
+            => EnqueueAction(CharacterCommandType.Block, action.EventType);
 
         private void HandleSimpleAttack(SimpleAttackAction action)
         {
@@ -73,6 +77,7 @@ namespace Game.Core.Character
         {
             _inputEvents.Unsubscribe<MoveInput>(HandleMove);
             _inputEvents.Unsubscribe<JumpAction>(HandleJump);
+            _inputEvents.Unsubscribe<BlockAction>(HandleBlock);
             _inputEvents.Unsubscribe<SimpleAttackAction>(HandleSimpleAttack);
             _inputEvents.Unsubscribe<PowerAttackAction>(HandlePowerAttack);
 

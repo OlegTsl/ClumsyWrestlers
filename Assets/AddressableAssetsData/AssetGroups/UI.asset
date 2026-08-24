@@ -13,17 +13,20 @@ MonoBehaviour:
   m_Name: UI
   m_EditorClassIdentifier: 
   m_GroupName: UI
-  m_Data:
-    m_SerializedData: []
   m_GUID: 6444f821ffe3f41e9850ff6aa38a2cf4
   m_SerializeEntries:
-  - m_GUID: c969eb4c91fa49c0a61c08512ac17cf6
-    m_Address: BrawlArena
+  - m_GUID: b50f423d4d6c461a8c09f90898e4c57a
+    m_Address: Wrestler
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b50f423d4d6c461a8c09f90898e4c57a
-    m_Address: Wrestler
+  - m_GUID: bfa19a0a6ddfb4825bd2f1cf7cefbe9f
+    m_Address: RoundConfiguration
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c969eb4c91fa49c0a61c08512ac17cf6
+    m_Address: BrawlArena
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

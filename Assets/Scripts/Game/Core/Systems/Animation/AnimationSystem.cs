@@ -28,7 +28,9 @@ namespace Game.Core.Systems
             _events.Subscribe<OnFallEvent>(OnFall);
             _events.Subscribe<OnMoveEvent>(OnMove);
             _events.Subscribe<OnHitEvent>(OnHit);
+            _events.Subscribe<OnBlockEvent>(OnBlock);
             _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Subscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
             _events.Subscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
             _events.Subscribe<OnAttackHandIkEvent>(OnAttackHandIk);
             _events.Subscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);
@@ -49,10 +51,16 @@ namespace Game.Core.Systems
         private void OnHit(OnHitEvent evt)
             => SetTrigger(evt.CharacterID, AnimationData.HitTrigger);
 
+        private void OnBlock(OnBlockEvent evt)
+        {
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            view?.SetAnimatorBool(AnimationData.Blocked, evt.Blocked);
+        }
+
         private void OnPowerAttackStarted(OnPowerAttackStartedEvent evt)
         {
             ICharacterModel model = _models.GetModel(evt.CharacterID);
-            ICharacterView view   = GetEnabledView(evt.CharacterID);
+            ICharacterView  view  = GetEnabledView(evt.CharacterID);
             
             if (model == null || view == null)
                 return;
@@ -60,13 +68,18 @@ namespace Game.Core.Systems
             PowerAttackSettings settings = model.Data.Combat.PowerAttack;
             view.SetAnimatorFloat(AnimationData.PowerAttackSpeed,
                 settings.AnimationSpeed, 0f, Time.deltaTime);
+            view.SetAnimatorBool(AnimationData.IsPowerAttacking, true);
             view.SetAnimatorTrigger(AnimationData.PowerAttackTrigger);
         }
+
+        private void OnPowerAttackEnded(OnPowerAttackEndedEvent evt)
+            => _views.GetView(evt.CharacterID)?.SetAnimatorBool(
+                AnimationData.IsPowerAttacking, false);
 
         private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
         {
             ICharacterModel model = _models.GetModel(evt.CharacterID);
-            ICharacterView view   = GetEnabledView(evt.CharacterID);
+            ICharacterView  view  = GetEnabledView(evt.CharacterID);
             
             if (model == null || view == null)
                 return;
@@ -104,6 +117,7 @@ namespace Game.Core.Systems
 
                 Vector3 horizontalVelocity = presentation.Velocity;
                 horizontalVelocity.y = 0f;
+                
                 float speed = horizontalVelocity.sqrMagnitude < 0.01f
                     ? 0f : horizontalVelocity.magnitude;
                 
@@ -131,7 +145,9 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnFallEvent>(OnFall);
             _events.Unsubscribe<OnMoveEvent>(OnMove);
             _events.Unsubscribe<OnHitEvent>(OnHit);
+            _events.Unsubscribe<OnBlockEvent>(OnBlock);
             _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
+            _events.Unsubscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
             _events.Unsubscribe<OnSimpleAttackStartedEvent>(OnSimpleAttackStarted);
             _events.Unsubscribe<OnAttackHandIkEvent>(OnAttackHandIk);
             _events.Unsubscribe<OnAttackHandIkClearedEvent>(OnAttackHandIkCleared);

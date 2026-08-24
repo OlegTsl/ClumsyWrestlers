@@ -6,20 +6,19 @@ using Game.Core.GameEvents;
 
 namespace Game.Core.Systems
 {
-    public sealed class PowerAttackCharacterCommandHandler :
-        ICharacterCommandHandler
+    public sealed class PowerAttackCommandHandler : ICommandHandler
     {
-        private readonly ICharacterContext             _characters;
-        private readonly IGameEventsBus                _events;
-        private readonly CharacterControlStateRegistry _states;
+        private readonly ICharacterContext    _characters;
+        private readonly IGameEventsBus       _events;
+        private readonly ControlStateRegistry _states;
 
         public CharacterCommandType CommandType
             => CharacterCommandType.PowerAttack;
 
-        public PowerAttackCharacterCommandHandler(
-            ICharacterContext             characters,
-            IGameEventsBus                events,
-            CharacterControlStateRegistry states
+        public PowerAttackCommandHandler(
+            ICharacterContext    characters,
+            IGameEventsBus       events,
+            ControlStateRegistry states
         )
         {
             _characters = characters;
@@ -30,6 +29,7 @@ namespace Game.Core.Systems
         public void Handle(in CharacterCommand command)
         {
             ICharacterModel model = _characters.GetModel(command.CharacterId);
+            
             if (model == null || !model.GetState<ICharacterActivityState>().Enabled ||
                 !_states.TryGet(command.CharacterId, out _))
             {
