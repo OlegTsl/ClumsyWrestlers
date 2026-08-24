@@ -28,6 +28,7 @@ namespace Game.Core.Systems
             _events.Subscribe<OnFallEvent>(OnFall);
             _events.Subscribe<OnMoveEvent>(OnMove);
             _events.Subscribe<OnHitEvent>(OnHit);
+            _events.Subscribe<OnKnockdownEvent>(OnKnockdown);
             _events.Subscribe<OnBlockEvent>(OnBlock);
             _events.Subscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
             _events.Subscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);
@@ -37,7 +38,24 @@ namespace Game.Core.Systems
         }
 
         private void OnJump(OnJumpEvent evt)
-            => SetTrigger(evt.CharacterID, AnimationData.JumpTrigger);
+        {
+            ICharacterModel model = _models.GetModel(evt.CharacterID);
+            if (model == null)
+            {
+                return;
+            }
+
+            ICharacterPresentationState presentation =
+                model.GetState<ICharacterPresentationState>();
+            if (!presentation.Enabled ||
+                !presentation.IsGrounded ||
+                presentation.Velocity.y > 0f)
+            {
+                return;
+            }
+
+            SetTrigger(evt.CharacterID, AnimationData.JumpTrigger);
+        }
 
         private void OnFall(OnFallEvent evt)
             => SetTrigger(evt.CharacterID, AnimationData.FallTrigger);
@@ -50,6 +68,24 @@ namespace Game.Core.Systems
 
         private void OnHit(OnHitEvent evt)
             => SetTrigger(evt.CharacterID, AnimationData.HitTrigger);
+
+        private void OnKnockdown(OnKnockdownEvent evt)
+        {
+            ICharacterView view = GetEnabledView(evt.CharacterID);
+            if (view == null)
+            {
+                return;
+            }
+
+            view.ResetAnimatorTrigger(AnimationData.HitTrigger);
+            view.ResetAnimatorTrigger(AnimationData.PunchTrigger);
+            view.ResetAnimatorTrigger(AnimationData.PowerAttackTrigger);
+            view.SetAnimatorBool(AnimationData.MoveInput, false);
+            view.SetAnimatorBool(AnimationData.Blocked, false);
+            view.SetAnimatorBool(AnimationData.IsPowerAttacking, false);
+            view.ClearAttackHandIk();
+            view.SetAnimatorTrigger(AnimationData.KnockdownTrigger);
+        }
 
         private void OnBlock(OnBlockEvent evt)
         {
@@ -73,8 +109,16 @@ namespace Game.Core.Systems
         }
 
         private void OnPowerAttackEnded(OnPowerAttackEndedEvent evt)
-            => _views.GetView(evt.CharacterID)?.SetAnimatorBool(
-                AnimationData.IsPowerAttacking, false);
+        {
+            ICharacterView view = _views.GetView(evt.CharacterID);
+            if (view == null)
+            {
+                return;
+            }
+
+            view.ResetAnimatorTrigger(AnimationData.PowerAttackTrigger);
+            view.SetAnimatorBool(AnimationData.IsPowerAttacking, false);
+        }
 
         private void OnSimpleAttackStarted(OnSimpleAttackStartedEvent evt)
         {
@@ -145,6 +189,7 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnFallEvent>(OnFall);
             _events.Unsubscribe<OnMoveEvent>(OnMove);
             _events.Unsubscribe<OnHitEvent>(OnHit);
+            _events.Unsubscribe<OnKnockdownEvent>(OnKnockdown);
             _events.Unsubscribe<OnBlockEvent>(OnBlock);
             _events.Unsubscribe<OnPowerAttackStartedEvent>(OnPowerAttackStarted);
             _events.Unsubscribe<OnPowerAttackEndedEvent>(OnPowerAttackEnded);

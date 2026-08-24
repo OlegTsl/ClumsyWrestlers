@@ -11,21 +11,21 @@ namespace Game.Core.Systems
     {
         private const float MinimumDirectionSqrMagnitude = 0.0001f;
 
-        private readonly IGameEventsBus _events;
-        private readonly ICharacterContext _characters;
-        private readonly ILevelEntityRegistry _levelEntities;
+        private readonly IGameEventsBus               _events;
+        private readonly ICharacterContext            _characters;
+        private readonly ILevelEntityRegistry         _levelEntities;
         private readonly ILevelImpactSettingsRegistry _impactSettings;
 
         public DamageSystem(
-            IGameEventsBus events,
-            ICharacterContext characters,
-            ILevelEntityRegistry levelEntities,
+            IGameEventsBus               events,
+            ICharacterContext            characters,
+            ILevelEntityRegistry         levelEntities,
             ILevelImpactSettingsRegistry impactSettings
         )
         {
-            _events = events;
-            _characters = characters;
-            _levelEntities = levelEntities;
+            _events         = events;
+            _characters     = characters;
+            _levelEntities  = levelEntities;
             _impactSettings = impactSettings;
             _events.Subscribe<OnHitDetectedEvent>(OnHitDetected);
         }
@@ -34,9 +34,7 @@ namespace Game.Core.Systems
         {
             HitData hit = evt.Hit;
             if (!CanResolve(hit))
-            {
                 return;
-            }
 
             HitData resolvedHit = hit.WithForce(CalculateForce(hit));
             ApplyForce(resolvedHit);
@@ -68,34 +66,8 @@ namespace Game.Core.Systems
         private Vector3 CalculateForce(in HitData hit)
         {
             Vector3 direction = hit.Direction;
-            if (hit.SourceType == HitObjectType.LevelEntity)
-            {
-                _impactSettings.TryGetImpactSettings(
-                    hit.SourceID,
-                    out LevelEntityImpactSettings sourceSettings);
-                direction.y = 1f;
-                return Normalize(direction) * sourceSettings.TargetImpactForce;
-            }
-
-            float force = GetCharacterAttackForce(hit);
-            direction.y = hit.AttackType == AttackType.Power ? 1f : 0f;
-            if (hit.TargetType == HitObjectType.LevelEntity)
-            {
-                _impactSettings.TryGetImpactSettings(
-                    hit.TargetID,
-                    out LevelEntityImpactSettings targetSettings);
-                force *= targetSettings.HitForceMultiplier;
-            }
-
-            return Normalize(direction) * force;
-        }
-
-        private float GetCharacterAttackForce(in HitData hit)
-        {
-            ICharacterModel attacker = _characters.GetModel(hit.SourceID);
-            return hit.AttackType == AttackType.Power
-                ? attacker.Data.Combat.PowerAttack.KnockbackForce
-                : attacker.Data.Combat.SimpleAttack.KnockbackForce;
+            direction.y = hit.KnockbackHeight;
+            return Normalize(direction) * hit.KnockbackForce;
         }
 
         private void ApplyForce(in HitData hit)
@@ -103,17 +75,14 @@ namespace Game.Core.Systems
             if (hit.TargetType == HitObjectType.Character)
             {
                 if (hit.Force.sqrMagnitude >= MinimumDirectionSqrMagnitude)
-                {
                     _events.Publish(new OnForceEvent(hit.TargetID, hit.Force));
-                }
 
                 _events.Publish(new OnHitEvent(hit.TargetID));
                 return;
             }
 
             _events.Publish(new OnLevelEntityImpulseRequestedEvent(
-                hit.TargetID,
-                hit.Force));
+                hit.TargetID, hit.Force));
         }
 
         private void ApplySourceReaction(in HitData hit)
@@ -121,15 +90,12 @@ namespace Game.Core.Systems
             if (hit.SourceType == HitObjectType.LevelEntity)
             {
                 _events.Publish(new OnLevelEntityDampingRequestedEvent(
-                    hit.SourceID,
-                    hit.ImpactVelocity));
+                    hit.SourceID, hit.ImpactVelocity));
             }
         }
 
         private static Vector3 Normalize(Vector3 direction)
-            => direction.sqrMagnitude < MinimumDirectionSqrMagnitude
-                ? Vector3.zero
-                : direction.normalized;
+            => direction.sqrMagnitude < MinimumDirectionSqrMagnitude ? Vector3.zero : direction.normalized;
 
         public void Dispose()
             => _events.Unsubscribe<OnHitDetectedEvent>(OnHitDetected);

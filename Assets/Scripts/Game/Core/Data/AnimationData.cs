@@ -4,6 +4,8 @@ namespace Game.Core.Data
 {
     public static class AnimationData
     {
+        public const string KnockdownLayer = "Knockdown";
+
         public static readonly int Speed              = Animator.StringToHash("Speed");
         public static readonly int SimpleAttackSpeed  = Animator.StringToHash("SimpleAttackSpeed");
         public static readonly int PowerAttackSpeed   = Animator.StringToHash("PowerAttackSpeed");
@@ -17,5 +19,8 @@ namespace Game.Core.Data
         public static readonly int IsPowerAttacking   = Animator.StringToHash("IsPowerAttacking");
         public static readonly int HitTrigger         = Animator.StringToHash("Hit");
         public static readonly int Blocked            = Animator.StringToHash("Blocked");
+        public static readonly int KnockdownTrigger   = Animator.StringToHash("Knockdown");
+        public static readonly int FallBackState      = Animator.StringToHash("FallBack");
+        public static readonly int GetUpState         = Animator.StringToHash("GetUp");
     }
 }

@@ -51,31 +51,37 @@ namespace Game.Core.Systems
 
             ICharacterCombatRuntimeState combat = target.GetState<ICharacterCombatRuntimeState>();
             if (!combat.Enabled)
+            {
                 return;
+            }
 
-            HitReactionSettings settings = target.Data.Combat.HitReaction;
-            if (settings.LeanAngle <= 0f)
+            if (evt.Hit.AttackType == AttackType.Power)
             {
                 Reset(target.CharacterID, state);
                 return;
             }
 
+            HitReactionSettings settings = target.Data.Combat.HitReaction;
             Vector3 direction = evt.Hit.Force;
             direction.y = 0f;
-            
-            if (direction.sqrMagnitude <= MinimumDirectionSqrMagnitude)
-                return;
 
-            direction.Normalize();
-            
-            Vector3 worldAxis = Vector3.Cross(Vector3.up, direction);
-            Vector3 localAxis = combat.InverseTransformDirection(worldAxis);
+            Quaternion targetRotation = Quaternion.identity;
+            if (settings.LeanAngle > 0f &&
+                direction.sqrMagnitude > MinimumDirectionSqrMagnitude)
+            {
+                direction.Normalize();
+                Vector3 worldAxis = Vector3.Cross(Vector3.up, direction);
+                Vector3 localAxis = combat.InverseTransformDirection(worldAxis);
+                targetRotation = Quaternion.AngleAxis(settings.LeanAngle, localAxis);
+            }
             
             state.Active         = true;
             state.Elapsed        = 0f;
             state.Duration       = settings.LeanDuration;
             state.StartRotation  = state.CurrentRotation;
-            state.TargetRotation = Quaternion.AngleAxis(settings.LeanAngle, localAxis);
+            state.TargetRotation = targetRotation;
+
+            combat.SetControlLock(CharacterControlLock.HitReaction, true);
         }
 
         public void LateTick()
@@ -137,11 +143,16 @@ namespace Game.Core.Systems
 
         private void Reset(EntityId characterId, HitReactionState state)
         {
-            state.Active = false;
-            state.Elapsed = 0f;
+            ICharacterModel model = _models.GetModel(characterId);
+            model?.GetState<ICharacterMovementState>().SetControlLock(
+                CharacterControlLock.HitReaction, false);
+
+            state.Active          = false;
+            state.Elapsed         = 0f;
             state.CurrentRotation = Quaternion.identity;
-            state.StartRotation = Quaternion.identity;
-            state.TargetRotation = Quaternion.identity;
+            state.StartRotation   = Quaternion.identity;
+            state.TargetRotation  = Quaternion.identity;
+
             _views.GetView(characterId)?.SetVisualLean(Quaternion.identity);
         }
 
@@ -150,6 +161,13 @@ namespace Game.Core.Systems
             _events.Unsubscribe<OnHitResolvedEvent>(OnHitResolved);
             _models.OnCharacterAdded -= Register;
             _models.OnCharacterRemoved -= Unregister;
+
+            foreach (KeyValuePair<EntityId, HitReactionState> pair in _states)
+            {
+                Reset(pair.Key, pair.Value);
+            }
+
+            _states.Clear();
         }
     }
 }

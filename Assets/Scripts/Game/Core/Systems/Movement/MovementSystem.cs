@@ -15,7 +15,7 @@ namespace Game.Core.Systems
         private readonly Dictionary<EntityId, MovementState> _states = new(16);
 
         public MovementSystem(
-            IGameEventsBus     gameEventsBus,
+            IGameEventsBus    gameEventsBus,
             ICharacterContext context
         )
         {
@@ -58,11 +58,11 @@ namespace Game.Core.Systems
 
             ICharacterMovementRuntimeState movement =
                 model.GetState<ICharacterMovementRuntimeState>();
+
             if (!movement.Enabled)
                 return;
 
-            if (_states.TryGetValue(evt.CharacterID, out var state) &&
-                movement.IsMovable)
+            if (_states.TryGetValue(evt.CharacterID, out var state) && movement.IsMovable)
                 state.MoveDirection = evt.Direction;
         }
 
@@ -72,14 +72,17 @@ namespace Game.Core.Systems
             if (model == null)
                 return;
 
-            ICharacterMovementRuntimeState movement =
-                model.GetState<ICharacterMovementRuntimeState>();
+            ICharacterMovementRuntimeState movement = model.GetState<ICharacterMovementRuntimeState>();
+
             if (!movement.Enabled)
                 return;
 
             if (_states.TryGetValue(evt.CharacterID, out var state) &&
                 movement.IsMovable)
-                state.JumpRequested = movement.IsGrounded;
+            {
+                state.JumpRequested = movement.IsGrounded &&
+                                      movement.Velocity.y <= 0f;
+            }
         }
 
         public void FixedTick()
@@ -90,6 +93,7 @@ namespace Game.Core.Systems
             {
                 ICharacterMovementRuntimeState character =
                     characters[idx].GetState<ICharacterMovementRuntimeState>();
+
                 if (!character.Enabled)
                     continue;
 
@@ -113,28 +117,16 @@ namespace Game.Core.Systems
             }
         }
 
-        private void HandleMovementLock(
-            ICharacterMovementRuntimeState model,
-            MovementState state)
+        private void HandleMovementLock(ICharacterMovementRuntimeState model, MovementState state)
         {
             if (model.IsMovable)
                 return;
 
             state.MoveDirection = Vector3.zero;
             state.JumpRequested = false;
-
-            if (model.IsGrounded && state.VerticalVelocity <= 0f)
-            {
-                state.HorizontalVelocity = Vector3.zero;
-                state.AirVelocity = Vector3.zero;
-            }
         }
 
-        private void TrackAirTime(
-            ICharacterMovementRuntimeState model,
-            MovementState    state,
-            MovementSettings settings
-        )
+        private void TrackAirTime(ICharacterMovementRuntimeState model, MovementState state, MovementSettings settings)
         {
             if (model.IsGrounded)
             {
@@ -152,11 +144,7 @@ namespace Game.Core.Systems
             }
         }
 
-        private void ApplyGravity(
-            ICharacterMovementRuntimeState model,
-            MovementState    state,
-            MovementSettings settings
-        )
+        private void ApplyGravity(ICharacterMovementRuntimeState model, MovementState state, MovementSettings settings)
         {
             bool isGrounded = model.IsGrounded;
             if (isGrounded && state.VerticalVelocity <= 0)
@@ -171,14 +159,15 @@ namespace Game.Core.Systems
             }
         }
 
-        private void UpdateHorizontalMovement(
-            ICharacterMovementRuntimeState model,
-            MovementState    state,
-            MovementSettings settings
-        )
+        private void UpdateHorizontalMovement(ICharacterMovementRuntimeState model, MovementState state, MovementSettings settings)
         {
             if (!model.IsMovable)
+            {
+                if (model.IsGrounded)
+                    UpdateGroundMovement(state, settings);
+
                 return;
+            }
 
             if (model.IsGrounded)
                 UpdateGroundMovement(state, settings);
@@ -224,10 +213,7 @@ namespace Game.Core.Systems
                 {
                     float targetSpeed  = settings.RunSpeed     * settings.AirControlFactor;
                     float acceleration = settings.Acceleration * settings.AirControlFactor;
-                    float newSpeed = Mathf.MoveTowards(
-                        currentSpeed,
-                        targetSpeed,
-                        acceleration * Time.fixedDeltaTime);
+                    float newSpeed     = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
                     
                     state.AirVelocity = worldDirection * newSpeed;
                 }
@@ -250,18 +236,13 @@ namespace Game.Core.Systems
             state.HorizontalVelocity = state.AirVelocity;
         }
 
-        private void UpdateRotation(
-            ICharacterMovementRuntimeState model,
-            MovementState state)
+        private void UpdateRotation(ICharacterMovementRuntimeState model, MovementState state)
         {
             if (state.MoveDirection.magnitude > 0.01f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(state.MoveDirection);
                 model.SetRotation(Quaternion.RotateTowards(
-                    model.Rotation,
-                    targetRotation,
-                    model.Data.Movement.RotationSpeed * Time.fixedDeltaTime
-                ));
+                    model.Rotation, targetRotation, model.Data.Movement.RotationSpeed * Time.fixedDeltaTime));
             }
         }
 
@@ -275,15 +256,8 @@ namespace Game.Core.Systems
             state.JumpRequested    = false;
         }
 
-        private void ApplyFinalVelocity(
-            MovementState state,
-            ICharacterMovementRuntimeState model)
-        {
-            model.SetVelocity(new Vector3(
-                state.HorizontalVelocity.x,
-                state.VerticalVelocity,
-                state.HorizontalVelocity.z));
-        }
+        private void ApplyFinalVelocity(MovementState state, ICharacterMovementRuntimeState model)
+            => model.SetVelocity(new Vector3(state.HorizontalVelocity.x, state.VerticalVelocity, state.HorizontalVelocity.z));
 
         private void OnForce(OnForceEvent evt)
         {

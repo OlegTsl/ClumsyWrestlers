@@ -35,6 +35,7 @@ MonoBehaviour:
       _handIkWeight: 0.75
       _handIkReach: 0.65
       _knockbackForce: 15
+      _knockbackHeight: 0
     _powerAttack:
       _animationClip: {fileID: -203655887218126122, guid: 567440027bca6455f884b7c9a7db1aa8,
         type: 3}
@@ -45,6 +46,7 @@ MonoBehaviour:
       _waveRadius: 3
       _waveHeight: 5
       _knockbackForce: 10
+      _knockbackHeight: 0
     _hitReaction:
       _leanAngle: 40
       _leanDuration: 0.5

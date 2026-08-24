@@ -108,6 +108,9 @@ namespace Game.Core.Character
         [Header("Impact")]
         [SerializeField, Range(0f, 50f)] private float _knockbackForce = 5f;
         public float KnockbackForce => _knockbackForce;
+
+        [SerializeField, Range(0f, 5f)] private float _knockbackHeight;
+        public float KnockbackHeight => _knockbackHeight;
     }
 
     [System.Serializable]
@@ -142,6 +145,9 @@ namespace Game.Core.Character
         [Header("Impact")]
         [SerializeField, Range(0f, 50f)] private float _knockbackForce = 12f;
         public float KnockbackForce => _knockbackForce;
+
+        [SerializeField, Range(0f, 5f)] private float _knockbackHeight;
+        public float KnockbackHeight => _knockbackHeight;
     }
 
     [System.Serializable]

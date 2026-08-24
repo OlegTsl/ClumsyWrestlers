@@ -25,18 +25,23 @@ namespace Game.Core.Character
         private Transform  _rightHand;
         private AttackHand _attackHand;
         private Quaternion _visualRootBaseRotation;
+        private int        _knockdownLayerIndex;
 
         public CharacterData       Data               => _data;
         public Collider            Hitbox             => _hitbox;
         public Rigidbody           Rigidbody          => _rigidbody;
         public Transform           Transform          => transform;
         public IBotNavigationAgent BotNavigationAgent => _botNavigation;
+        public bool                IsAlive            => this != null && _visualRoot != null;
+        public int KnockdownAnimatorStateHash
+            => _animator.GetCurrentAnimatorStateInfo(_knockdownLayerIndex).shortNameHash;
 
         private void Awake()
         {
             _leftHand  = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
             _rightHand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
             _visualRootBaseRotation = _visualRoot.localRotation;
+            _knockdownLayerIndex = _animator.GetLayerIndex(AnimationData.KnockdownLayer);
         }
 
         private void OnDisable()
@@ -79,6 +84,9 @@ namespace Game.Core.Character
 
         public void SetAnimatorTrigger(int id)
             => _animator.SetTrigger(id);
+
+        public void ResetAnimatorTrigger(int id)
+            => _animator.ResetTrigger(id);
 
         public void SetAttackHandIk(AttackHand hand, Vector3 position, float weight)
         {

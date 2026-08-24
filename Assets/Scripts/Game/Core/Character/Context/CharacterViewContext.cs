@@ -6,31 +6,33 @@ namespace Game.Core.Character
 {
     public sealed class CharacterViewContext : ICharacterViewContext
     {
-        private readonly Dictionary<EntityId, ICharacterView> _views        = new();
-        private readonly Dictionary<Collider, EntityId>       _colliderIds  = new();
-        private readonly Dictionary<Rigidbody, EntityId>      _rigidbodyIds = new();
+        private readonly Dictionary<EntityId, ViewRegistration> _views        = new();
+        private readonly Dictionary<Collider, EntityId>         _colliderIds  = new();
+        private readonly Dictionary<Rigidbody, EntityId>        _rigidbodyIds = new();
 
         public void AddView(EntityId characterId, ICharacterView view)
         {
-            _views.Add(characterId, view);
-            _colliderIds.Add(view.Hitbox, characterId);
-            _rigidbodyIds.Add(view.Rigidbody, characterId);
+            var registration = new ViewRegistration(view);
+            _views.Add(characterId, registration);
+            _colliderIds.Add(registration.Hitbox, characterId);
+            _rigidbodyIds.Add(registration.Rigidbody, characterId);
         }
 
         public void RemoveView(EntityId characterId)
         {
-            if (!_views.TryGetValue(characterId, out ICharacterView view))
+            if (!_views.Remove(characterId, out ViewRegistration registration))
                 return;
 
-            _views.Remove(characterId);
-            _colliderIds.Remove(view.Hitbox);
-            _rigidbodyIds.Remove(view.Rigidbody);
+            _colliderIds.Remove(registration.Hitbox);
+            _rigidbodyIds.Remove(registration.Rigidbody);
         }
 
         public ICharacterView GetView(EntityId characterId)
         {
-            _views.TryGetValue(characterId, out ICharacterView view);
-            return view;
+            return _views.TryGetValue(characterId, out ViewRegistration registration) &&
+                   registration.View.IsAlive
+                ? registration.View
+                : null;
         }
 
         public bool TryGetCharacterId(Collider collider, out EntityId characterId)
@@ -40,6 +42,20 @@ namespace Game.Core.Character
 
             Rigidbody attachedRigidbody = collider.attachedRigidbody;
             return attachedRigidbody != null && _rigidbodyIds.TryGetValue(attachedRigidbody, out characterId);
+        }
+
+        private readonly struct ViewRegistration
+        {
+            public readonly ICharacterView View;
+            public readonly Collider       Hitbox;
+            public readonly Rigidbody      Rigidbody;
+
+            public ViewRegistration(ICharacterView view)
+            {
+                View      = view;
+                Hitbox    = view.Hitbox;
+                Rigidbody = view.Rigidbody;
+            }
         }
     }
 }

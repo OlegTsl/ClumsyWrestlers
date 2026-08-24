@@ -9,4 +9,12 @@ namespace Game.Core.GameEvents
         public OnFallEvent(EntityId characterID)
             => CharacterID = characterID;
     }
+
+    public readonly struct OnKnockdownEvent
+    {
+        public EntityId CharacterID { get; }
+
+        public OnKnockdownEvent(EntityId characterID)
+            => CharacterID = characterID;
+    }
 }

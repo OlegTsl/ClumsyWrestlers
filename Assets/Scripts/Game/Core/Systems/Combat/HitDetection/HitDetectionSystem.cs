@@ -21,6 +21,7 @@ namespace Game.Core.Systems
         private readonly ICharacterContext _characters;
         private readonly ICharacterViewContext _characterViews;
         private readonly ILevelEntityRegistry _levelEntities;
+        private readonly ILevelImpactSettingsRegistry _impactSettings;
         private readonly Collider[] _hitBuffer = new Collider[HitBufferCapacity];
         private readonly Dictionary<EntityId, HitDetectionState> _states = new(16);
         private readonly int _targetLayerMask =
@@ -30,13 +31,15 @@ namespace Game.Core.Systems
             IGameEventsBus events,
             ICharacterContext characters,
             ICharacterViewContext characterViews,
-            ILevelEntityRegistry levelEntities
+            ILevelEntityRegistry levelEntities,
+            ILevelImpactSettingsRegistry impactSettings
         )
         {
             _events = events;
             _characters = characters;
             _characterViews = characterViews;
             _levelEntities = levelEntities;
+            _impactSettings = impactSettings;
 
             _events.Subscribe<OnSimpleAttackStartedEvent>(OnAttackStarted);
             _events.Subscribe<OnSimpleAttackEndedEvent>(OnAttackEnded);
@@ -114,7 +117,7 @@ namespace Game.Core.Systems
                 state.HitboxRadius,
                 _hitBuffer,
                 _targetLayerMask);
-            PublishOverlapHits(attacker, state, hitCount, AttackType.Simple);
+            PublishOverlapHits(attacker, state, hitCount);
         }
 
         private void DetectPowerAttackHits(
@@ -133,15 +136,14 @@ namespace Game.Core.Systems
                 state.HitboxRadius,
                 _hitBuffer,
                 1 << LayerData.Environment);
-            PublishOverlapHits(attacker, state, hitCount, AttackType.Power);
+            PublishOverlapHits(attacker, state, hitCount);
             state.Reset();
         }
 
         private void PublishOverlapHits(
             ICharacterCombatRuntimeState attacker,
             HitDetectionState state,
-            int hitCount,
-            AttackType attackType
+            int hitCount
         )
         {
             for (int i = 0; i < hitCount; i++)
@@ -170,7 +172,7 @@ namespace Game.Core.Systems
                         PublishCharacterHit(
                             attacker,
                             targetCombat,
-                            attackType);
+                            state);
                     }
 
                     continue;
@@ -185,7 +187,7 @@ namespace Game.Core.Systems
                 }
 
                 Vector3 direction = entity.Position - attacker.Position;
-                if (attackType == AttackType.Power &&
+                if (state.AttackType == AttackType.Power &&
                     Mathf.Abs(direction.y) > state.HitboxHeight)
                 {
                     continue;
@@ -196,7 +198,7 @@ namespace Game.Core.Systems
                     continue;
                 }
 
-                PublishLevelEntityHit(attacker, entity, attackType);
+                PublishLevelEntityHit(attacker, entity, state);
             }
         }
 
@@ -223,7 +225,7 @@ namespace Game.Core.Systems
                     target.CharacterID != attacker.CharacterID &&
                     state.HitTargets.Add(target.CharacterID))
                 {
-                    PublishCharacterHit(attacker, target, AttackType.Power);
+                    PublishCharacterHit(attacker, target, state);
                 }
             }
         }
@@ -231,7 +233,7 @@ namespace Game.Core.Systems
         private void PublishCharacterHit(
             ICharacterCombatRuntimeState attacker,
             ICharacterCombatRuntimeState target,
-            AttackType attackType
+            HitDetectionState state
         )
         {
             Vector3 direction = GetHorizontalDirection(target.Position - attacker.Position);
@@ -245,14 +247,16 @@ namespace Game.Core.Systems
                 attacker.CharacterID,
                 HitObjectType.Character,
                 target.CharacterID,
-                attackType,
-                direction)));
+                state.AttackType,
+                direction,
+                state.KnockbackForce,
+                state.KnockbackHeight)));
         }
 
         private void PublishLevelEntityHit(
             ICharacterCombatRuntimeState attacker,
             ILevelEntityView entity,
-            AttackType attackType
+            HitDetectionState state
         )
         {
             Vector3 direction = GetHorizontalDirection(entity.Position - attacker.Position);
@@ -261,13 +265,23 @@ namespace Game.Core.Systems
                 direction = GetHorizontalDirection(attacker.Forward);
             }
 
+            float knockbackForce = 0f;
+            if (_impactSettings.TryGetImpactSettings(
+                    entity.EntityId,
+                    out LevelEntityImpactSettings targetSettings))
+            {
+                knockbackForce = state.KnockbackForce * targetSettings.HitForceMultiplier;
+            }
+
             _events.Publish(new OnHitDetectedEvent(new HitData(
                 HitObjectType.Character,
                 attacker.CharacterID,
                 HitObjectType.LevelEntity,
                 entity.EntityId,
-                attackType,
-                direction)));
+                state.AttackType,
+                direction,
+                knockbackForce,
+                state.KnockbackHeight)));
         }
 
         private void OnAttackStarted(OnSimpleAttackStartedEvent evt)
@@ -283,7 +297,9 @@ namespace Game.Core.Systems
                 settings.Duration * settings.HitboxStartNormalized,
                 settings.Duration * settings.HitboxEndNormalized,
                 settings.HitboxRange,
-                settings.HitboxRadius);
+                settings.HitboxRadius,
+                settings.KnockbackForce,
+                settings.KnockbackHeight);
         }
 
         private void OnAttackEnded(OnSimpleAttackEndedEvent evt)
@@ -307,7 +323,9 @@ namespace Game.Core.Systems
             state.BeginPowerAttack(
                 settings.WaveStartTime,
                 settings.WaveRadius,
-                settings.WaveHeight);
+                settings.WaveHeight,
+                settings.KnockbackForce,
+                settings.KnockbackHeight);
         }
 
         private void OnPowerAttackEnded(OnPowerAttackEndedEvent evt)

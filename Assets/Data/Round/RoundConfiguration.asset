@@ -16,6 +16,6 @@ MonoBehaviour:
   _playerTeamId: 1
   _opponentTeamId: 2
   _alliedBotCount: 0
-  _opponentBotCount: 0
+  _opponentBotCount: 1
   _botBehaviorProfile: {fileID: 11400000, guid: 9fd4c456c1a2d440d9dcc7d1dcd53a9a,
     type: 2}

@@ -92,7 +92,9 @@ namespace Game.Tests.Core
                 HitObjectType.Character,
                 _target.CharacterID,
                 AttackType.Simple,
-                Vector3.forward)));
+                Vector3.forward,
+                0f,
+                0f)));
 
         private void OnHitValidated(OnHitValidatedEvent evt)
             => _validatedHitCount++;

@@ -14,5 +14,8 @@ namespace Game.Core.Environment
 
         [SerializeField, Range(0f, 30f)] private float _targetImpactForce = 6f;
         public float TargetImpactForce => _targetImpactForce;
+
+        [SerializeField, Range(0f, 5f)] private float _knockbackHeight = 1f;
+        public float KnockbackHeight => _knockbackHeight;
     }
 }

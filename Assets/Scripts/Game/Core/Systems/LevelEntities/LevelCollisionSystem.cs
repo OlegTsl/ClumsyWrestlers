@@ -18,6 +18,7 @@ namespace Game.Core.Systems
         private readonly IGameEventsBus        _events;
         private readonly ILevelCollisionBuffer _collisions;
         private readonly ILevelEntityRegistry  _levelEntities;
+        private readonly ILevelImpactSettingsRegistry _impactSettings;
         private readonly ICharacterContext     _characters;
         private readonly ICharacterViewContext _characterViews;
         private readonly HashSet<CollisionPair> _processedCollisions = new(32);
@@ -26,6 +27,7 @@ namespace Game.Core.Systems
             IGameEventsBus        events,
             ILevelCollisionBuffer collisions,
             ILevelEntityRegistry  levelEntities,
+            ILevelImpactSettingsRegistry impactSettings,
             ICharacterContext     characters,
             ICharacterViewContext characterViews
         )
@@ -33,6 +35,7 @@ namespace Game.Core.Systems
             _events         = events;
             _collisions     = collisions;
             _levelEntities  = levelEntities;
+            _impactSettings = impactSettings;
             _characters     = characters;
             _characterViews = characterViews;
         }
@@ -57,7 +60,10 @@ namespace Game.Core.Systems
             ICharacterModel target = _characters.GetModel(targetId);
             if (target == null ||
                 !_processedCollisions.Add(new CollisionPair(collision.SourceId, targetId)) ||
-                !_levelEntities.TryGetEntity(collision.SourceId, out ILevelEntityView source))
+                !_levelEntities.TryGetEntity(collision.SourceId, out ILevelEntityView source) ||
+                !_impactSettings.TryGetImpactSettings(
+                    collision.SourceId,
+                    out LevelEntityImpactSettings sourceSettings))
             {
                 return;
             }
@@ -70,7 +76,10 @@ namespace Game.Core.Systems
             _events.Publish(new OnHitDetectedEvent(new HitData(
                 HitObjectType.LevelEntity, collision.SourceId,
                 HitObjectType.Character, targetId,
-                AttackType.Simple, direction, collision.ImpactVelocity)));
+                AttackType.Simple, direction,
+                sourceSettings.TargetImpactForce,
+                sourceSettings.KnockbackHeight,
+                collision.ImpactVelocity)));
         }
 
         public void Dispose()

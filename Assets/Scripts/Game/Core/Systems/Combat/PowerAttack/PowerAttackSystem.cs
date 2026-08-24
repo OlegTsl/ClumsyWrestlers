@@ -51,7 +51,8 @@ namespace Game.Core.Systems
             if (_states.TryGetValue(characterId, out PowerAttackState state) && state.IsAttacking)
             {
                 ICharacterModel model = _context.GetModel(characterId);
-                model?.GetState<ICharacterMovementState>().SetMovable(true);
+                model?.GetState<ICharacterMovementState>().SetControlLock(
+                    CharacterControlLock.PowerAttack, false);
             }
 
             _states.Remove(characterId);
@@ -65,8 +66,13 @@ namespace Game.Core.Systems
 
             ICharacterCombatRuntimeState combat =
                 model.GetState<ICharacterCombatRuntimeState>();
-            if (!combat.Enabled)
+            if (!combat.Enabled ||
+                !combat.IsMovable ||
+                !combat.IsGrounded ||
+                combat.Velocity.y > 0f)
+            {
                 return;
+            }
 
             if (!_states.TryGetValue(evt.CharacterID, out PowerAttackState state) || state.IsAttacking)
                 return;
@@ -119,7 +125,7 @@ namespace Game.Core.Systems
                 return;
 
             state.StartAttack();
-            model.SetMovable(false);
+            model.SetControlLock(CharacterControlLock.PowerAttack, true);
 
             _events.Publish(new OnPowerAttackStartedEvent(
                 model.CharacterID, settings.AnimationClip));
@@ -143,7 +149,7 @@ namespace Game.Core.Systems
                 return;
 
             state.EndAttack();
-            model.SetMovable(true);
+            model.SetControlLock(CharacterControlLock.PowerAttack, false);
 
             _events.Publish(new OnPowerAttackEndedEvent(
                 model.CharacterID));

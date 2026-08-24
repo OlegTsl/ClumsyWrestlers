@@ -11,6 +11,8 @@ namespace Game.Core.Character
         Rigidbody           Rigidbody          { get; }
         Transform           Transform          { get; }
         IBotNavigationAgent BotNavigationAgent { get; }
+        bool                IsAlive            { get; }
+        int KnockdownAnimatorStateHash          { get; }
 
         CharacterPhysicsSnapshot CapturePhysicsSnapshot();
         void SetVelocity(Vector3 velocity);
@@ -21,6 +23,7 @@ namespace Game.Core.Character
         void SetAnimatorFloat(int id, float value, float dampTime, float deltaTime);
         void SetAnimatorBool(int id, bool value);
         void SetAnimatorTrigger(int id);
+        void ResetAnimatorTrigger(int id);
         void SetAttackHandIk(AttackHand hand, Vector3 position, float weight);
         void ClearAttackHandIk();
     }

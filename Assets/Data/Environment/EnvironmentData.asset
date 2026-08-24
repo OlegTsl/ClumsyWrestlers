@@ -15,3 +15,4 @@ MonoBehaviour:
   _hitForceMultiplier: 10
   _forceDamping: 0.6
   _targetImpactForce: 12
+  _knockbackHeight: 1

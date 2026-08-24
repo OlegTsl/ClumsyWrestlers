@@ -23,8 +23,10 @@ namespace Game.Core.Character
         public Vector3       Velocity     { get; private set; }
         public Vector3       AttackOrigin { get; private set; }
         public bool          Enabled      { get; private set; }
-        public bool          IsMovable    { get; private set; } = true;
+        public bool          IsMovable    => _controlLocks == CharacterControlLock.None;
         public bool          IsGrounded   { get; private set; }
+
+        private CharacterControlLock _controlLocks;
 
         public Vector3 Forward
             => Rotation * Vector3.forward;
@@ -49,8 +51,13 @@ namespace Game.Core.Character
         public void SetEnabled(bool enabled)
             => Enabled = enabled;
 
-        public void SetMovable(bool isMovable)
-            => IsMovable = isMovable;
+        public void SetControlLock(CharacterControlLock controlLock, bool isLocked)
+        {
+            if (isLocked)
+                _controlLocks |= controlLock;
+            else
+                _controlLocks &= ~controlLock;
+        }
 
         public void SynchronizePhysics(in CharacterPhysicsSnapshot snapshot)
         {

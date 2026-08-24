@@ -4,11 +4,17 @@ namespace Game.Core.Level.Entities
     {
         public float HitForceMultiplier { get; }
         public float TargetImpactForce { get; }
+        public float KnockbackHeight { get; }
 
-        public LevelEntityImpactSettings(float hitForceMultiplier, float targetImpactForce)
+        public LevelEntityImpactSettings(
+            float hitForceMultiplier,
+            float targetImpactForce,
+            float knockbackHeight
+        )
         {
             HitForceMultiplier = hitForceMultiplier;
             TargetImpactForce = targetImpactForce;
+            KnockbackHeight = knockbackHeight;
         }
     }
 }

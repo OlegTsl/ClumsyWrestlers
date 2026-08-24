@@ -30,7 +30,8 @@ namespace Game.Core.Environment
         public override Vector3 Position => _rigidbody.position;
         public LevelEntityImpactSettings ImpactSettings => new(
             _data.HitForceMultiplier,
-            _data.TargetImpactForce);
+            _data.TargetImpactForce,
+            _data.KnockbackHeight);
 
         private void Awake()
         {

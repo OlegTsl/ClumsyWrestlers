@@ -18,12 +18,16 @@ namespace Game.Core.Systems
         public float HitboxRange       { get; set; }
         public float HitboxRadius      { get; set; }
         public float HitboxHeight      { get; private set; }
+        public float KnockbackForce    { get; private set; }
+        public float KnockbackHeight   { get; private set; }
 
         public void BeginAttack(
             float activeWindowStart,
             float activeWindowEnd,
             float hitboxRange,
-            float hitboxRadius
+            float hitboxRadius,
+            float knockbackForce,
+            float knockbackHeight
         )
         {
             Reset();
@@ -34,9 +38,17 @@ namespace Game.Core.Systems
             ActiveWindowEnd   = activeWindowEnd;
             HitboxRange       = hitboxRange;
             HitboxRadius      = hitboxRadius;
+            KnockbackForce    = knockbackForce;
+            KnockbackHeight   = knockbackHeight;
         }
 
-        public void BeginPowerAttack(float activeWindowStart, float hitboxRadius, float hitboxHeight)
+        public void BeginPowerAttack(
+            float activeWindowStart,
+            float hitboxRadius,
+            float hitboxHeight,
+            float knockbackForce,
+            float knockbackHeight
+        )
         {
             Reset();
             IsActive          = true;
@@ -44,6 +56,8 @@ namespace Game.Core.Systems
             ActiveWindowStart = activeWindowStart;
             HitboxRadius      = hitboxRadius;
             HitboxHeight      = hitboxHeight;
+            KnockbackForce    = knockbackForce;
+            KnockbackHeight   = knockbackHeight;
         }
 
         public void Reset()
@@ -55,6 +69,8 @@ namespace Game.Core.Systems
             HitboxRange       = 0f;
             HitboxRadius      = 0f;
             HitboxHeight      = 0f;
+            KnockbackForce    = 0f;
+            KnockbackHeight   = 0f;
             HitTargets.Clear();
         }
     }

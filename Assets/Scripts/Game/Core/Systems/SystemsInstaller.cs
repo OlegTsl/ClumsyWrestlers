@@ -27,6 +27,7 @@ namespace Game.Core.Systems
             Container.BindInterfacesAndSelfTo<HitDetectionSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitValidationSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitResolutionSystem>().AsSingle();
+            Container.BindInterfacesAndSelfTo<KnockdownSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<HitReactionSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<LevelEntityTickSystem>().AsSingle();
             Container.BindInterfacesAndSelfTo<LevelCollisionSystem>().AsSingle();

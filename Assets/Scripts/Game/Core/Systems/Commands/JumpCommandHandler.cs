@@ -25,11 +25,27 @@ namespace Game.Core.Systems
         public void Handle(in CharacterCommand command)
         {
             if (command.InputEventType != InputEventType.Pressed)
+            {
                 return;
+            }
 
             ICharacterModel model = _characters.GetModel(command.CharacterId);
-            if (model != null && model.GetState<ICharacterActivityState>().Enabled)
-                _events.Publish(new OnJumpEvent(model.CharacterID));
+            if (model == null)
+            {
+                return;
+            }
+
+            ICharacterMovementRuntimeState movement =
+                model.GetState<ICharacterMovementRuntimeState>();
+            if (!movement.Enabled ||
+                !movement.IsMovable ||
+                !movement.IsGrounded ||
+                movement.Velocity.y > 0f)
+            {
+                return;
+            }
+
+            _events.Publish(new OnJumpEvent(model.CharacterID));
         }
     }
 }
